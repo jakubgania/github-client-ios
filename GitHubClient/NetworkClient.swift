@@ -37,34 +37,10 @@ enum NetworkError: Error, LocalizedError {
 }
 
 struct NetworkClient {
-    private let baseURL = "https://api.github.com"
-    private let keychain = KeychainManager.shared
-    
-    func fetch<T: Decodable>(_ endpoint: String, method: String = "GET", requiresAuth: Bool = false, queryParams: [String: String]? = nil) async throws -> T {
-        var urlComponents = URLComponents(string: baseURL + endpoint)
-        if let queryParams = queryParams {
-            urlComponents?.queryItems = queryParams.map { URLQueryItem(name: $0.key, value: $0.value) }
-        }
-        
-        guard let url = urlComponents?.url else {
-            throw NetworkError.invalidURL
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = method
-        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-        request.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
-        
-        if requiresAuth {
-            guard let token = keychain.getToken() else {
-                throw NetworkError.unauthorized
-            }
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
-        
+    func fetch<T: Decodable>(_ request: URLRequest) async throws -> T {
         do {
-            let ( data, response ) = try await URLSession.shared.data(for: request)
-            
+            let (data, response) = try await URLSession.shared.data(for: request)
+
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw NetworkError.invalidResponse
             }
@@ -77,7 +53,7 @@ struct NetworkClient {
             guard !data.isEmpty else {
                 throw NetworkError.noData
             }
-            
+
             do {
                 let decoder = JSONDecoder()
                 decoder.keyDecodingStrategy = .convertFromSnakeCase
