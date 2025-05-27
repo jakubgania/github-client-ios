@@ -16,6 +16,69 @@ enum ViewType: String {
     case collections = "collections"
 }
 
+struct Search: View {
+    var items: [Item]
+    
+    var body: some View {
+//        place for description
+        
+        if items.isEmpty {
+            VStack {
+                Spacer()
+                
+                VStack {
+                    HStack {
+                        Text("What are you looking for...")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color.gray.opacity(0.4))
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal)
+        }
+        
+        ForEach(items.reversed()) { item in
+            NavigationLink {
+//                profile view
+            } label: {
+                HStack {
+//                    avatar
+                    
+                    VStack(alignment: .leading) {
+                        if let userName = item.name, !userName.isEmpty {
+                            Text(userName)
+                                .font(.headline)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.black)
+                                .lineLimit(2)
+                        }
+                        
+                        Text(item.login)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.gray.secondary)
+                    }
+                    .padding(.leading, 10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .foregroundStyle(.black)
+                }
+                .padding()
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(12)
+                .transition(.opacity)
+            }
+            .padding(.bottom, 2)
+            .padding(.horizontal)
+        }
+    }
+}
+
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var items: [Item]
@@ -49,6 +112,8 @@ struct ContentView: View {
     @State private var isSearchFieldActive = true // detect when search field is activated
     
     @FocusState private var isTextFieldActive: Bool
+    
+    
 
     var body: some View {
         NavigationStack {
