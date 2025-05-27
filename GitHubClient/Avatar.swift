@@ -8,38 +8,40 @@
 import SwiftUI
 
 struct Avatar: View {
+    enum AvatarType {
+        case user
+        case organization
+    }
+    
     let urlString: String?
     let size: CGFloat?
-    let type: String
+    let type: AvatarType
     
     var body: some View {
-        CachedAsyncImage(url: URL(string: urlString!), transaction: .init(animation: .smooth)) {
-            phase in
+        CachedAsyncImage(url: URL(string: urlString!), transaction: .init(animation: .smooth)) { phase in
             switch phase {
             case .empty:
                 ProgressView()
             case .success(let image):
-                if type == "Organization" {
+                switch type {
+                case .user:
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .clipShape(.rect(cornerRadius: 6))
-                }
-                
-                if type == "User" {
+                case .organization:
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .clipShape(Circle())
                 }
             case .failure:
-                if type == "Organization" {
-                    Rectangle()
-                        .foregroundStyle(.gray.opacity(0.1))
-                }
-                
-                if type == "User" {
+                switch type {
+                case .user:
                     Circle()
+                        .foregroundStyle(.gray.opacity(0.1))
+                case .organization:
+                    Rectangle()
                         .foregroundStyle(.gray.opacity(0.1))
                 }
             @unknown default:
@@ -47,11 +49,11 @@ struct Avatar: View {
                     .foregroundStyle(.gray.opacity(0.1))
             }
         }
-        .frame(width: size, height: size)
+        .frame(width: size ?? 40, height: size ?? 40)
     }
 }
 
 #Preview {
-    Avatar(urlString: "https://avatars.githubusercontent.com/u/21696393?v=4", size: 40, type: "User")
-    Avatar(urlString: "https://avatars.githubusercontent.com/u/14985020?v=4", size: 40, type: "Organization")
+    Avatar(urlString: "https://avatars.githubusercontent.com/u/21696393?v=4", size: 40, type: .user)
+    Avatar(urlString: "https://avatars.githubusercontent.com/u/14985020?v=4", size: 40, type: .organization)
 }
