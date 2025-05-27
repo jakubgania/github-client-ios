@@ -20,9 +20,9 @@ fileprivate class ImageCache {
     }
 }
 
-public struct CacheAsyncImage<Content>: View where Content View {
+public struct CachedAsyncImage<Content>: View where Content: View {
     private let url: URL?
-    private let scale: GCFloat
+    private let scale: CGFloat
     private let transaction: Transaction
     private let content: (AsyncImagePhase) -> Content
     
@@ -40,15 +40,15 @@ public struct CacheAsyncImage<Content>: View where Content View {
         } else {
             let _ = print("fetched")
             AsyncImage(url: url, scale: scale, transaction: transaction) { phase in
-                cachedAndRender(pahse: phase)
+                cachedAndRender(phase: phase)
             }
         }
     }
     
-    private func cachedAndRender(pahse: AsyncImagePhase) -> some View {
+    private func cachedAndRender(phase: AsyncImagePhase) -> some View {
         if case .success (let image) = phase, let url {
             ImageCache[url] = image
         }
-        return content(pahse)
+        return content(phase)
     }
 }
