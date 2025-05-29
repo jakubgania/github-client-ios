@@ -11,6 +11,15 @@ struct Avatar: View {
     enum AvatarType {
         case user
         case organization
+
+        init(from string: String?) {
+            switch string?.lowercased() {
+            case "user":
+                self = .user
+            default:
+                self = .organization
+            }
+        }
     }
     
     let urlString: String?
@@ -28,12 +37,12 @@ struct Avatar: View {
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .clipShape(.rect(cornerRadius: 6))
+                        .clipShape(Circle())
                 case .organization:
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .clipShape(Circle())
+                        .clipShape(.rect(cornerRadius: 6))
                 }
             case .failure:
                 switch type {

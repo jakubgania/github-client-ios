@@ -41,6 +41,7 @@ final class GitHubService {
 
     func fetchUserProfile(username: String) async throws -> Profile {
         let request = try makeRequest(path: "/users/\(username)", requiresAuth: true)
+        print(request)
         return try await networkClient.fetch(request)
     }
 

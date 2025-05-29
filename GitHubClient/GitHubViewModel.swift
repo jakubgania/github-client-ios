@@ -34,6 +34,7 @@ final class GitHubViewModel: ObservableObject {
    }
     
     func searchUser(username: String) async {
+        print("search model")
         guard let context else {
             errorMessage = "Brak contextu"
             return

@@ -41,10 +41,11 @@ struct Search: View {
         
         ForEach(items.reversed()) { item in
             NavigationLink {
+                Text("test")
 //                profile view
             } label: {
                 HStack {
-//                    avatar
+                    Avatar(urlString: item.avatartUrl, size: 52, type: Avatar.AvatarType(from: item.type))
                     
                     VStack(alignment: .leading) {
                         if let userName = item.name, !userName.isEmpty {
@@ -83,7 +84,7 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var items: [Item]
     
-//    @StateObject private var viewModel = GitHubViewModel()
+    @StateObject private var viewModel = GitHubViewModel()
     
     @State private var tokenInput: String = ""
     @State private var isSaved: Bool = false
@@ -113,8 +114,6 @@ struct ContentView: View {
     
     @FocusState private var isTextFieldActive: Bool
     
-    
-
     var body: some View {
         NavigationStack {
             ScrollView() {
@@ -128,8 +127,12 @@ struct ContentView: View {
                                     .focused($isTextFieldActive)
                                 
                                 Button {
+                                    selectedViewType = .search
+                                    selectedButton = 0
+                                    print("test")
                                     Task {
-//                                        await viewModel.searchUser(username: "jakubgania")
+                                        print("search")
+                                        await viewModel.searchUser(username: "openai")
                                     }
                                 } label: {
                                     Image(systemName: "arrow.up.circle.fill").font(.system(size: 24))
@@ -290,6 +293,8 @@ struct ContentView: View {
                         switch selectedViewType {
                         case .search:
                             Text("view for search")
+//                            some problem with search component
+                            Search(items: items)
                         case .trendingRepositories:
                             Text("view for trending repositories")
                         case .trendingDevelopers:
@@ -361,7 +366,7 @@ struct ContentView: View {
             }
         }
         .onAppear {
-//            viewModel.setContext(modelContext)
+           viewModel.setContext(modelContext)
         }
     }
 }
