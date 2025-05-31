@@ -41,9 +41,14 @@ final class GitHubService {
 
     func fetchUserProfile(username: String) async throws -> Profile {
         let request = try makeRequest(path: "/users/\(username)", requiresAuth: true)
-        print(request)
         return try await networkClient.fetch(request)
     }
+    
+    func getFullProfile(username: String) async throws -> GitHubProfile {
+        let request = try makeRequest(path: "/users/\(username)", requiresAuth: true)
+        return try await networkClient.fetch(request)
+    }
+    
 
 //    func fetchTrendingRepositories() async throws -> [TrendingRepository] {
 //        let request = try makeRequest(path: "/some/custom/trending-endpoint")

@@ -16,11 +16,18 @@ enum ViewType: String {
     case collections = "collections"
 }
 
+extension Color {
+    static let slate50 = Color(red: 248 / 255, green: 250 / 255, blue: 252 / 255)
+    static let slate70 = Color(red: 244.5 / 255, green: 247.5 / 255, blue: 250.5 / 255)
+    static let slate100 = Color(red: 241 / 255, green: 245 / 255, blue: 249 / 255)
+    static let gray50 = Color(red: 249 / 255, green: 250 / 255, blue: 251 / 255)
+}
+
 struct Search: View {
     var items: [Item]
     
     var body: some View {
-//        place for description
+        ViewDescription(description: "Search users and organizations.")
         
         if items.isEmpty {
             VStack {
@@ -45,20 +52,20 @@ struct Search: View {
 //                profile view
             } label: {
                 HStack {
-                    Avatar(urlString: item.avatartUrl, size: 52, type: Avatar.AvatarType(from: item.type))
+                    Avatar(urlString: item.avatartUrl, size: 50, type: Avatar.AvatarType(from: item.type))
                     
                     VStack(alignment: .leading) {
                         if let userName = item.name, !userName.isEmpty {
                             Text(userName)
                                 .font(.headline)
-                                .fontWeight(.medium)
+                                .fontWeight(.semibold)
                                 .foregroundStyle(.black)
                                 .lineLimit(2)
                         }
                         
                         Text(item.login)
                             .font(.subheadline)
-                            .fontWeight(.semibold)
+                            .fontWeight(.medium)
                             .foregroundStyle(.gray.secondary)
                     }
                     .padding(.leading, 10)
@@ -69,8 +76,8 @@ struct Search: View {
                     Image(systemName: "chevron.right")
                         .foregroundStyle(.black)
                 }
-                .padding()
-                .background(Color.gray.opacity(0.1))
+                .padding(10)
+                .background(Color.gray50)
                 .cornerRadius(12)
                 .transition(.opacity)
             }
@@ -113,6 +120,7 @@ struct ContentView: View {
     @State private var isSearchFieldActive = true // detect when search field is activated
     
     @FocusState private var isTextFieldActive: Bool
+    @State private var suggestions = ["vercel", "apple", "microsoft", "google", "tensorflow", "aws", "ibm", "github", "facebookresearch"]
     
     var body: some View {
         NavigationStack {
@@ -132,7 +140,7 @@ struct ContentView: View {
                                     print("test")
                                     Task {
                                         print("search")
-                                        await viewModel.searchUser(username: "openai")
+                                        await viewModel.searchUser(username: userInput)
                                     }
                                 } label: {
                                     Image(systemName: "arrow.up.circle.fill").font(.system(size: 24))
@@ -292,8 +300,6 @@ struct ContentView: View {
                         
                         switch selectedViewType {
                         case .search:
-                            Text("view for search")
-//                            some problem with search component
                             Search(items: items)
                         case .trendingRepositories:
                             Text("view for trending repositories")
@@ -304,6 +310,24 @@ struct ContentView: View {
                         case .collections:
                             Text("view for collections")
                         }
+                    } else {
+                        VStack(alignment: .leading) {
+                            ForEach(suggestions, id: \.self) { suggestion in
+                                HStack {
+                                    Text(suggestion)
+                                        .padding(.leading, 12)
+                                        .onTapGesture {
+                                            Task {
+                                                await viewModel.searchUser(username: suggestion)
+                                            }
+                                            userInput = suggestion
+                                            isTextFieldActive.toggle()
+                                        }
+                                }
+                                .frame(height: 38)
+                            }
+                        }
+                        .padding()
                     }
                 }
             }

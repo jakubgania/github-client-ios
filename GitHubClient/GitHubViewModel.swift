@@ -19,6 +19,7 @@ struct Profile: Decodable {
 @MainActor
 final class GitHubViewModel: ObservableObject {
     @Published var profile: Profile?
+    @Published var fullProfile: GitHubProfile?
     @Published var errorMessage: String?
     
     private let service: GitHubService
@@ -56,5 +57,15 @@ final class GitHubViewModel: ObservableObject {
        } catch {
            errorMessage = error.localizedDescription
        }
+    }
+    
+    func loadFullProfile(username: String) async {
+        async let fullProfile = service.getFullProfile(username: username)
+        
+        do {
+            self.fullProfile = try await fullProfile
+        } catch {
+            self.errorMessage = error.localizedDescription
+        }
     }
 }
