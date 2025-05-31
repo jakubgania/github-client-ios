@@ -6,13 +6,18 @@
 //
 
 import SwiftUI
+import CoreImage.CIFilterBuiltins
 
 struct ProfileView: View {
-    @State private var user: GitHubProfile?
+//    @State private var user: GitHubProfile?
 //    @EnvironmentObject var viewModel: GitHubViewModel
     @StateObject private var viewModel = GitHubViewModel()
+    @State private var showingQRCodeSheet: Bool = false
     
     var username: String = ""
+    
+    let context = CIContext()
+    let filter = CIFilter.qrCodeGenerator()
     
     var body: some View {
         NavigationStack {

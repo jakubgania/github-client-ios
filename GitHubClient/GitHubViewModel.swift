@@ -20,6 +20,7 @@ struct Profile: Decodable {
 final class GitHubViewModel: ObservableObject {
     @Published var profile: Profile?
     @Published var fullProfile: GitHubProfile?
+    @Published var listOfReposForUsername: [Repository] = []
     @Published var errorMessage: String?
     
     private let service: GitHubService
@@ -64,6 +65,16 @@ final class GitHubViewModel: ObservableObject {
         
         do {
             self.fullProfile = try await fullProfile
+        } catch {
+            self.errorMessage = error.localizedDescription
+        }
+    }
+    
+    func fetchReposForUsername(username: String) async {
+        async let repos = service.getReposForUsername(username: username)
+        
+        do {
+            self.listOfReposForUsername = try await repos
         } catch {
             self.errorMessage = error.localizedDescription
         }
