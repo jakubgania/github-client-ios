@@ -242,6 +242,20 @@ struct ProfileView: View {
                         }
                     }
                     .font(.caption)
+                    
+                    ForEach(viewModel.fullProfile?.events ?? []) { event in
+                        VStack {
+                            Text(event.type)
+                            Text(event.repo.name)
+                            Text(event.actor.login)
+                            if let commit = event.payload.commits?.first {
+                                        Text(commit.message)
+                                    } else {
+                                        Text("No commit message")
+                                    }
+//                            Text(event.payload.commit?.message)
+                        }
+                    }
                 }
                 .padding()
                 .task {

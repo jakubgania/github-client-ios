@@ -58,6 +58,11 @@ final class GitHubService {
         let request = try makeRequest(path: "/users/\(username)/social_accounts")
         return try await networkClient.fetch(request)
     }
+    
+    func getEvents(username: String) async throws -> [GitHubEvent] {
+        let request = try makeRequest(path: "/users/\(username)/events/public")
+        return try await networkClient.fetch(request)
+    }
 
 //    func fetchTrendingRepositories() async throws -> [TrendingRepository] {
 //        let request = try makeRequest(path: "/some/custom/trending-endpoint")

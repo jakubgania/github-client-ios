@@ -26,6 +26,7 @@ struct GitHubProfile: Codable {
     let starredUrl: String?
     let createdAt: String?
     let updatedAt: String?
+    var events: [GitHubEvent]?
 }
 
 struct SocialAccounts: Codable, Identifiable {

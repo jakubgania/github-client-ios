@@ -22,6 +22,7 @@ final class GitHubViewModel: ObservableObject {
     @Published var fullProfile: GitHubProfile?
     @Published var listOfReposForUsername: [Repository] = []
     @Published var socialAccounts: [SocialAccounts] = []
+//    @Published var events: [GitHubEvent] = []
     @Published var errorMessage: String?
     
     private let service: GitHubService
@@ -61,16 +62,22 @@ final class GitHubViewModel: ObservableObject {
        }
     }
     
-    func loadFullProfile(username: String) async {
-//        async var fullProfile = service.getFullProfile(username: username)
-//        async let socialAccounts = service.getSocialAccounts(username: username)
-        
+    func loadFullProfile(username: String) async {        
         do {
-//            self.fullProfile = try await fullProfile
-            var profile = try await service.getFullProfile(username: username)
-            let socialAccounts = try await service.getSocialAccounts(username: username)
-            profile.socialAccounts = socialAccounts
-            self.fullProfile = profile
+            async let profile = service.getFullProfile(username: username)
+            async let socialAccounts = service.getSocialAccounts(username: username)
+            async let events = service.getEvents(username: username)
+            
+            var fullProfile = try await profile
+            let fetchedSocialAccounts = try await socialAccounts
+            let fetchedEvents = try await events
+            
+            print("events ", fetchedEvents)
+            
+            fullProfile.socialAccounts = fetchedSocialAccounts
+            fullProfile.events = fetchedEvents
+            
+            self.fullProfile = fullProfile
         } catch {
             self.errorMessage = error.localizedDescription
         }
@@ -86,13 +93,4 @@ final class GitHubViewModel: ObservableObject {
         }
     }
     
-    func fetchSocialAccounts(username: String) async {
-        async let socialAccounts = service.getSocialAccounts(username: username)
-        
-        do {
-            self.socialAccounts = try await socialAccounts
-        } catch {
-            self.errorMessage = error.localizedDescription
-        }
-    }
 }
