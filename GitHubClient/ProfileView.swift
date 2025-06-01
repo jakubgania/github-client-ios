@@ -166,7 +166,8 @@ struct ProfileView: View {
                                 Text("Repositories")
                                     .padding(.leading, 6)
                                 Spacer()
-                                
+                                Text("\(viewModel.fullProfile?.publicRepos ?? 0)")
+                                    .foregroundStyle(.gray)
                             }
                             .frame(height: 40)
                         }
@@ -192,7 +193,7 @@ struct ProfileView: View {
                             .listRowSeparator(.hidden)
                             
                             NavigationLink {
-//                                org view
+                                OrganizationsView(organizationsAPIEndpoint: viewModel.fullProfile?.organizationsUrl ?? "")
                             } label: {
                                 HStack {
                                     Image(systemName: "building.2")
@@ -244,16 +245,17 @@ struct ProfileView: View {
                     .font(.caption)
                     
                     ForEach(viewModel.fullProfile?.events ?? []) { event in
-                        VStack {
+                        VStack(alignment: .leading) {
+//                          https://docs.github.com/en/rest/using-the-rest-api/github-event-types?apiVersion=2022-11-28
                             Text(event.type)
                             Text(event.repo.name)
                             Text(event.actor.login)
                             if let commit = event.payload.commits?.first {
-                                        Text(commit.message)
-                                    } else {
-                                        Text("No commit message")
-                                    }
-//                            Text(event.payload.commit?.message)
+                                Text(commit.message)
+                            } else {
+                                Text("No commit message")
+                            }
+                            Text(daysAgo(from: event.createdAt, asString: true) as? String ?? "Unknown")
                         }
                     }
                 }
@@ -328,6 +330,34 @@ struct ProfileView: View {
         } else {
             return nil
         }
+    }
+    
+    func daysAgo(from dtString: String, asString: Bool = false) -> Any {
+        let formatter = ISO8601DateFormatter()
+        formatter.timeZone = TimeZone.autoupdatingCurrent
+        
+        guard let date = formatter.date(from: dtString) else {
+            print("Error: Invalid ISO 8601 date string: \(dtString)")
+            return asString ? "Unknown" : 0
+        }
+        
+        let now = Date()
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.day], from: date, to: now)
+        
+        guard let days = components.day, days >= 0 else {
+            return asString ? "In the future" : 0
+        }
+        
+        if asString {
+            switch days {
+            case 0: return "Today"
+            case 1: return "1 day ago"
+            default: return "\(days) days ago"
+            }
+        }
+        
+        return days
     }
 }
 

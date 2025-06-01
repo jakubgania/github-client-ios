@@ -22,7 +22,7 @@ final class GitHubViewModel: ObservableObject {
     @Published var fullProfile: GitHubProfile?
     @Published var listOfReposForUsername: [Repository] = []
     @Published var socialAccounts: [SocialAccounts] = []
-//    @Published var events: [GitHubEvent] = []
+    @Published var organizations: [Organization] = []
     @Published var errorMessage: String?
     
     private let service: GitHubService
@@ -88,6 +88,17 @@ final class GitHubViewModel: ObservableObject {
         
         do {
             self.listOfReposForUsername = try await repos
+        } catch {
+            self.errorMessage = error.localizedDescription
+        }
+    }
+    
+    func fetchOrganizations(endpoint: String) async {
+        async let organizations = service.getOrganizations(organizationsAPIEndpoint: endpoint)
+        
+        do {
+            self.organizations = try await organizations
+            print("organizations ", self.organizations)
         } catch {
             self.errorMessage = error.localizedDescription
         }

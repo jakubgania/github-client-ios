@@ -55,12 +55,17 @@ final class GitHubService {
     }
     
     func getSocialAccounts(username: String) async throws -> [SocialAccounts] {
-        let request = try makeRequest(path: "/users/\(username)/social_accounts")
+        let request = try makeRequest(path: "/users/\(username)/social_accounts", requiresAuth: true)
         return try await networkClient.fetch(request)
     }
     
     func getEvents(username: String) async throws -> [GitHubEvent] {
-        let request = try makeRequest(path: "/users/\(username)/events/public")
+        let request = try makeRequest(path: "/users/\(username)/events/public", requiresAuth: true)
+        return try await networkClient.fetch(request)
+    }
+    
+    func getOrganizations(organizationsAPIEndpoint: String) async throws -> [Organization] {
+        let request = try makeRequest(path: organizationsAPIEndpoint, requiresAuth: true)
         return try await networkClient.fetch(request)
     }
 
