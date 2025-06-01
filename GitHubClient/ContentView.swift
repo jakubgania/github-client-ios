@@ -48,8 +48,7 @@ struct Search: View {
         
         ForEach(items.reversed()) { item in
             NavigationLink {
-                Text("test")
-//                profile view
+                ProfileView(username: item.login)
             } label: {
                 HStack {
                     Avatar(urlString: item.avatartUrl, size: 50, type: Avatar.AvatarType(from: item.type))
@@ -148,7 +147,7 @@ struct ContentView: View {
                             }
                             .padding(6)
                             .padding(.leading, 6.0)
-                            .background(Color.gray.opacity(0.1))
+                            .background(Color.gray50)
                             .clipShape(.rect(cornerRadius: 12))
                         }
                     }

@@ -27,6 +27,7 @@ struct RepositoriesView: View {
                         } label: {
                             VStack(alignment: .leading, spacing: 10) {
                                 Text(item.name ?? "")
+                                    .fontWeight(.medium)
                                 
                                 if let fork = item.fork, fork == true {
                                     Text("Forked")

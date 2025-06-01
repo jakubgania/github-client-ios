@@ -21,6 +21,7 @@ final class GitHubViewModel: ObservableObject {
     @Published var profile: Profile?
     @Published var fullProfile: GitHubProfile?
     @Published var listOfReposForUsername: [Repository] = []
+    @Published var socialAccounts: [SocialAccounts] = []
     @Published var errorMessage: String?
     
     private let service: GitHubService
@@ -61,10 +62,15 @@ final class GitHubViewModel: ObservableObject {
     }
     
     func loadFullProfile(username: String) async {
-        async let fullProfile = service.getFullProfile(username: username)
+//        async var fullProfile = service.getFullProfile(username: username)
+//        async let socialAccounts = service.getSocialAccounts(username: username)
         
         do {
-            self.fullProfile = try await fullProfile
+//            self.fullProfile = try await fullProfile
+            var profile = try await service.getFullProfile(username: username)
+            let socialAccounts = try await service.getSocialAccounts(username: username)
+            profile.socialAccounts = socialAccounts
+            self.fullProfile = profile
         } catch {
             self.errorMessage = error.localizedDescription
         }
@@ -75,6 +81,16 @@ final class GitHubViewModel: ObservableObject {
         
         do {
             self.listOfReposForUsername = try await repos
+        } catch {
+            self.errorMessage = error.localizedDescription
+        }
+    }
+    
+    func fetchSocialAccounts(username: String) async {
+        async let socialAccounts = service.getSocialAccounts(username: username)
+        
+        do {
+            self.socialAccounts = try await socialAccounts
         } catch {
             self.errorMessage = error.localizedDescription
         }

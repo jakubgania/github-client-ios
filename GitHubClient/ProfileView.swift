@@ -28,7 +28,7 @@ struct ProfileView: View {
                            let type = viewModel.fullProfile?.type {
                             Avatar(
                                 urlString: avatarUrl,
-                                size: 50,
+                                size: 68,
                                 type: Avatar.AvatarType(from: type)
                             )
                         }
@@ -92,18 +92,235 @@ struct ProfileView: View {
                             }
                         }
                     }
+                    
+                    if let userBlog = viewModel.fullProfile?.blog, !userBlog.isEmpty {
+                        Section {
+                            Label {
+                                if let url = URL(string: checkURL(blogURL: userBlog)) {
+                                    Link(userBlog, destination: url)
+                                        .fontWeight(.semibold)
+                                        .foregroundStyle(.primary)
+                                        .lineLimit(1)
+                                }
+                            } icon: {
+                                Image(systemName: "link")
+                                    .font(.system(size: 14))
+                            }
+                        }
+                    }
+                    
+                    if let socialAccounts = viewModel.fullProfile?.socialAccounts, !socialAccounts.isEmpty {
+                        Text("social section")
+                        ForEach(socialAccounts) { account in
+                            Text(displayText(for: account))
+                        }
+                    }
+                    
+                    HStack {
+                        Image(systemName: "person.2")
+                            .font(.system(size: 14))
+                        
+                        Text("\(viewModel.fullProfile?.followers ?? 0)")
+                            .bold()
+                        
+                        NavigationLink {
+                            Text("temp")
+                        } label: {
+                            Text("followers")
+                                .foregroundStyle(.gray)
+                        }
+                        
+                        Text("•")
+                        
+                        Text("\(viewModel.fullProfile?.following ?? 0)")
+                            .bold()
+                        
+                        Text("following")
+                            .foregroundStyle(.gray)
+                    }
+                    
+                    Button {
+                        
+                    } label: {
+                        HStack {
+                            Image(systemName: "plus")
+                            Text("Follow")
+                        }
+                        .foregroundStyle(.black)
+                        .frame(maxWidth: .infinity)
+                    }
+                    .padding(.vertical, 10)
+                    .background(Color.gray.opacity(0.1))
+                    .clipShape(.rect(cornerRadius: 6))
+                    
+                    List {
+                        NavigationLink {
+                            RepositoriesView(username: viewModel.profile?.login ?? "")
+                        } label: {
+                            HStack {
+                                Image(systemName: "list.bullet")
+                                    .foregroundStyle(.white)
+                                    .frame(width: 34, height: 34)
+                                    .background(Color.teal)
+                                    .clipShape(.rect(cornerRadius: 6))
+                                Text("Repositories")
+                                    .padding(.leading, 6)
+                                Spacer()
+                                
+                            }
+                            .frame(height: 40)
+                        }
+                        .listRowInsets(.init())
+                        .listRowSeparator(.hidden)
+                        
+                        if viewModel.fullProfile?.type == "User" {
+                            NavigationLink {
+//                                starred view
+                            } label: {
+                                HStack {
+                                    Image(systemName: "star")
+                                        .foregroundStyle(.white)
+                                        .frame(width: 34, height: 34)
+                                        .background(Color.orange)
+                                        .clipShape(.rect(cornerRadius: 6))
+                                    Text("Starred")
+                                        .padding(.leading, 6)
+                                    Spacer()
+                                }
+                            }
+                            .listRowInsets(.init())
+                            .listRowSeparator(.hidden)
+                            
+                            NavigationLink {
+//                                org view
+                            } label: {
+                                HStack {
+                                    Image(systemName: "building.2")
+                                        .foregroundStyle(.white)
+                                        .frame(width: 34, height: 34)
+                                        .background(Color.accentColor)
+                                        .cornerRadius(6)
+                                    Text("Organizations")
+                                        .padding(.leading, 6)
+                                    Spacer()
+                                }
+                            }
+                            .listRowInsets(.init())
+                            .listRowSeparator(.hidden)
+                        }
+                    }
+                    .scrollDisabled(true)
+                    .scrollContentBackground(.hidden)
+                    .listStyle(.plain)
+                    .listRowSpacing(6)
+                    .frame(minHeight: 140)
+                    
+                    Button {
+                        self.showingQRCodeSheet.toggle()
+                    } label: {
+                        HStack {
+                            Image(systemName: "qrcode")
+                            Text("Share Profile")
+                        }
+                        .foregroundStyle(.black)
+                        .frame(maxWidth: .infinity)
+                    }
+                    .padding(.vertical, 10)
+                    .background(Color.gray.opacity(0.1))
+                    .clipShape(.rect(cornerRadius: 6))
+                    
+                    Group {
+                        HStack {
+                            Text("Created at:")
+                            Text(formattedDateTime(from: viewModel.fullProfile?.createdAt ?? "no data") ?? "Invalid date")
+                        }
+                        .padding(.top, 10)
+                        
+                        HStack {
+                            Text("Updated at:")
+                            Text(formattedDateTime(from: viewModel.fullProfile?.updatedAt ?? "no data") ?? "Invalid date")
+                        }
+                    }
+                    .font(.caption)
+                }
+                .padding()
+                .task {
+                    await viewModel.loadFullProfile(username: username)
+                    print("Loaded profile:", viewModel.fullProfile ?? "nil")
+                }
+                .sheet(isPresented: $showingQRCodeSheet, onDismiss: didDismissQRCodeSheet) {
+                    VStack {
+                        Text("QR Code to profile")
+                        
+                        Image(uiImage: generateQRCode(from: viewModel.fullProfile?.htmlUrl ?? "https://github.com"))
+                            .interpolation(.none)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 140, height: 140)
+                    }
+                    .presentationDetents([.medium])
                 }
             }
-            .navigationTitle("Profile")
-            .navigationBarTitleDisplayMode(.inline)
         }
-        .task {
-            await viewModel.loadFullProfile(username: username)
-            print("Loaded profile:", viewModel.fullProfile ?? "nil")
+        .navigationTitle("Profile")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+    
+    func checkURL(blogURL: String) -> String {
+        if blogURL.prefix(4) != "http" || blogURL.prefix(5) != "https" {
+            return "https://\(blogURL)"
+        } else {
+            return blogURL
+        }
+    }
+    
+    private func displayText(for account: SocialAccounts) -> String {
+        switch account.provider?.lowercased() {
+        case "twitter", "instagram", "linkedin":
+            return account.username ?? "No username"
+        case "generic":
+            return account.url ?? "No URL"
+        default:
+            return "Unknow provider"
+        }
+    }
+    
+    func didDismissQRCodeSheet() {
+        self.showingQRCodeSheet = false
+    }
+    
+    func generateQRCode(from string: String) -> UIImage {
+        filter.message = Data(string.utf8)
+        
+        if let outputImage = filter.outputImage {
+            if let cgImage = context.createCGImage(outputImage, from: outputImage.extent) {
+                return UIImage(cgImage: cgImage)
+            }
+        }
+        
+        return UIImage(systemName: "xmark.circle") ?? UIImage()
+    }
+    
+    func formattedDateTime(from dtString: String) -> String? {
+        let formatter = ISO8601DateFormatter()
+        formatter.timeZone = TimeZone.autoupdatingCurrent
+        
+        if let date = formatter.date(from: dtString) {
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "dd.MM.yyyy HH:mm"
+            let formattedDate = dateFormatter.string(from: date)
+            
+            return formattedDate
+        } else {
+            return nil
         }
     }
 }
 
 #Preview {
     ProfileView(username: "jakubgania")
+}
+
+#Preview("Profile view for org") {
+    ProfileView(username: "microsoft")
 }

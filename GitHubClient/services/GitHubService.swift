@@ -53,6 +53,11 @@ final class GitHubService {
         let request = try makeRequest(path: "/users/\(username)/repos?sort=created&direction=desc&per_page=100", requiresAuth: true)
         return try await networkClient.fetch(request)
     }
+    
+    func getSocialAccounts(username: String) async throws -> [SocialAccounts] {
+        let request = try makeRequest(path: "/users/\(username)/social_accounts")
+        return try await networkClient.fetch(request)
+    }
 
 //    func fetchTrendingRepositories() async throws -> [TrendingRepository] {
 //        let request = try makeRequest(path: "/some/custom/trending-endpoint")
