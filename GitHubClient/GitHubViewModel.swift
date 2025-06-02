@@ -23,7 +23,13 @@ final class GitHubViewModel: ObservableObject {
     @Published var listOfReposForUsername: [Repository] = []
     @Published var socialAccounts: [SocialAccounts] = []
     @Published var organizations: [Organization] = []
+    @Published var followers: [Follower] = []
     @Published var errorMessage: String?
+    
+    @Published var isFetchingFollowers = false        // spinner / throttling
+    private var followerPage = 1
+    private let followerPerPage = 30
+    private var reachedEndOfFollowers = false
     
     private let service: GitHubService
     private var context: ModelContext?
@@ -104,4 +110,44 @@ final class GitHubViewModel: ObservableObject {
         }
     }
     
+    func fetchFollowers(username: String, page: Int, perPage: Int) async {
+        async let followers = service.getFollowers(username: username, page: page, perPage: perPage)
+        
+        do {
+            self.followers = try await followers
+            print("followers ", self.followers)
+        } catch {
+            self.errorMessage = error.localizedDescription
+        }
+    }
+    
+    func resetFollowers(for username: String) async {
+        followerPage = 1
+        reachedEndOfFollowers = false
+        followers.removeAll()
+        await fetchNextFollowersPage(for: username)
+    }
+
+    /// Call whenever the last row scrolls on screen.
+    func fetchNextFollowersPage(for username: String) async {
+        guard !isFetchingFollowers, !reachedEndOfFollowers else { return }
+        isFetchingFollowers = true
+        defer { isFetchingFollowers = false }
+
+        do {
+            let newFollowers = try await service.getFollowers(
+                username: username,
+                page: followerPage,
+                perPage: followerPerPage
+            )
+
+            if newFollowers.count < followerPerPage {
+                reachedEndOfFollowers = true      // server is out of data
+            }
+            followers.append(contentsOf: newFollowers)
+            followerPage += 1
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
 }

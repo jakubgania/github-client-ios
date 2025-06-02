@@ -68,6 +68,11 @@ final class GitHubService {
         let request = try makeRequest(path: organizationsAPIEndpoint, requiresAuth: true)
         return try await networkClient.fetch(request)
     }
+    
+    func getFollowers(username: String, page: Int, perPage: Int) async throws -> [Follower] {
+        let request = try makeRequest(path: "/users/\(username)/followers?page=\(page)&per_page=\(perPage)")
+        return try await networkClient.fetch(request)
+    }
 
 //    func fetchTrendingRepositories() async throws -> [TrendingRepository] {
 //        let request = try makeRequest(path: "/some/custom/trending-endpoint")

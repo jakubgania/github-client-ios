@@ -124,7 +124,7 @@ struct ProfileView: View {
                             .bold()
                         
                         NavigationLink {
-                            Text("temp")
+                            FollowersView(username: viewModel.fullProfile?.login ?? "")
                         } label: {
                             Text("followers")
                                 .foregroundStyle(.gray)
@@ -155,7 +155,7 @@ struct ProfileView: View {
                     
                     List {
                         NavigationLink {
-                            RepositoriesView(username: viewModel.profile?.login ?? "")
+                            RepositoriesView(username: viewModel.fullProfile?.login ?? "")
                         } label: {
                             HStack {
                                 Image(systemName: "list.bullet")
