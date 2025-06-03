@@ -38,6 +38,11 @@ final class GitHubService {
 
         return request
     }
+    
+    func fetchAuthenticatedUser() async throws -> AuthenticatedUser {
+        let request = try makeRequest(path: "/user", requiresAuth: true)
+        return try await networkClient.fetch(request)
+    }
 
     func fetchUserProfile(username: String) async throws -> Profile {
         let request = try makeRequest(path: "/users/\(username)", requiresAuth: true)
@@ -71,6 +76,11 @@ final class GitHubService {
     
     func getFollowers(username: String, page: Int, perPage: Int) async throws -> [Follower] {
         let request = try makeRequest(path: "/users/\(username)/followers?page=\(page)&per_page=\(perPage)")
+        return try await networkClient.fetch(request)
+    }
+    
+    func getStarredRepositories(username: String) async throws -> [StarredItem] {
+        let request = try makeRequest(path: "/users/\(username)/starred")
         return try await networkClient.fetch(request)
     }
 

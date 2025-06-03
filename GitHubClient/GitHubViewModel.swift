@@ -18,15 +18,17 @@ struct Profile: Decodable {
 
 @MainActor
 final class GitHubViewModel: ObservableObject {
+    @Published var me: AuthenticatedUser?
     @Published var profile: Profile?
     @Published var fullProfile: GitHubProfile?
     @Published var listOfReposForUsername: [Repository] = []
     @Published var socialAccounts: [SocialAccounts] = []
     @Published var organizations: [Organization] = []
     @Published var followers: [Follower] = []
+    @Published var starredRepositories: [StarredItem] = []
     @Published var errorMessage: String?
     
-    @Published var isFetchingFollowers = false        // spinner / throttling
+    @Published var isFetchingFollowers = false
     private var followerPage = 1
     private let followerPerPage = 30
     private var reachedEndOfFollowers = false
@@ -39,12 +41,21 @@ final class GitHubViewModel: ObservableObject {
         self.service = service
     }
 
-   func setContext(_ context: ModelContext) {
+    func setContext(_ context: ModelContext) {
        self.context = context
-   }
+    }
+    
+    func loadAuthenticatedUser() async {
+        async let user = try await service.fetchAuthenticatedUser()
+        
+        do {
+            self.me = try await user
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
     
     func searchUser(username: String) async {
-        print("search model")
         guard let context else {
             errorMessage = "Brak contextu"
             return
@@ -60,7 +71,6 @@ final class GitHubViewModel: ObservableObject {
                type: profile.type ?? ""
            )
            
-            print("item ", item.login)
            context.insert(item)
            try? context.save()
        } catch {
@@ -77,8 +87,6 @@ final class GitHubViewModel: ObservableObject {
             var fullProfile = try await profile
             let fetchedSocialAccounts = try await socialAccounts
             let fetchedEvents = try await events
-            
-            print("events ", fetchedEvents)
             
             fullProfile.socialAccounts = fetchedSocialAccounts
             fullProfile.events = fetchedEvents
@@ -104,7 +112,6 @@ final class GitHubViewModel: ObservableObject {
         
         do {
             self.organizations = try await organizations
-            print("organizations ", self.organizations)
         } catch {
             self.errorMessage = error.localizedDescription
         }
@@ -115,7 +122,6 @@ final class GitHubViewModel: ObservableObject {
         
         do {
             self.followers = try await followers
-            print("followers ", self.followers)
         } catch {
             self.errorMessage = error.localizedDescription
         }
@@ -128,7 +134,6 @@ final class GitHubViewModel: ObservableObject {
         await fetchNextFollowersPage(for: username)
     }
 
-    /// Call whenever the last row scrolls on screen.
     func fetchNextFollowersPage(for username: String) async {
         guard !isFetchingFollowers, !reachedEndOfFollowers else { return }
         isFetchingFollowers = true
@@ -142,12 +147,22 @@ final class GitHubViewModel: ObservableObject {
             )
 
             if newFollowers.count < followerPerPage {
-                reachedEndOfFollowers = true      // server is out of data
+                reachedEndOfFollowers = true
             }
             followers.append(contentsOf: newFollowers)
             followerPage += 1
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+    
+    func fetchStarredRepositories(username: String) async {
+        async let starredRepos = service.getStarredRepositories(username: username)
+        
+        do {
+            self.starredRepositories = try await starredRepos
+        } catch {
+            self.errorMessage = error.localizedDescription
         }
     }
 }

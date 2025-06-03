@@ -98,6 +98,7 @@ struct ContentView: View {
     
     @State private var userInput: String = ""
     @State private var showTokenSheet: Bool = false
+    @State private var showUserSheet: Bool = false
     @State private var selectedViewType: ViewType = .search
     
     var viewTitle: String {
@@ -345,6 +346,12 @@ struct ContentView: View {
                         } label: {
                             Label("Set API token", systemImage: "arrow.forward")
                         }
+                        
+                        Button {
+                            showUserSheet = true
+                        } label: {
+                            Label("User profile", systemImage: "person.fill")
+                        }
                     } label: {
                         Label("Menu", systemImage: "ellipsis.circle")
                     }
@@ -387,9 +394,18 @@ struct ContentView: View {
                     }
                 }
             }
+            .sheet(isPresented: $showUserSheet) {
+//              https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get-the-authenticated-user
+                VStack {
+                    Text("User Details")
+                    Text("\(viewModel.me?.login ?? "No user logged in")")
+                }
+            }
         }
-        .onAppear {
-           viewModel.setContext(modelContext)
+        .task {
+//          task because it is an asyncronous operation
+            viewModel.setContext(modelContext)
+            await viewModel.loadAuthenticatedUser()
         }
     }
 }

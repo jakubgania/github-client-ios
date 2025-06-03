@@ -176,7 +176,7 @@ struct ProfileView: View {
                         
                         if viewModel.fullProfile?.type == "User" {
                             NavigationLink {
-//                                starred view
+                                StarredView()
                             } label: {
                                 HStack {
                                     Image(systemName: "star")
