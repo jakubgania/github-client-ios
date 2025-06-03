@@ -13,6 +13,8 @@ struct GitHubClientApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
+            StarredList.self,
+            StarredRepository.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
