@@ -16,7 +16,10 @@ struct StarredView: View {
     @Query var starredLists: [StarredList]
     
     @State private var searchText: String = ""
+    @State private var listName: String = ""
+    @State private var listDescription: String = ""
     @State private var showingCreateListSheet: Bool = false
+    @State private var isAlertShown = false
     
     var username: String = ""
     
@@ -115,10 +118,86 @@ struct StarredView: View {
                 .navigationTitle("Starred Repositories")
                 .listStyle(PlainListStyle())
             }
+            .sheet(isPresented: $showingCreateListSheet) {
+                NavigationStack {
+                    VStack(alignment: .leading) {
+                        Divider()
+                        
+                        VStack {
+                            TextField("List name", text: $listName, axis: .vertical)
+                                .font(.title3)
+                                .fontWeight(.medium)
+                                .textInputAutocapitalization(.never)
+                            
+                            TextField("Description", text: $listDescription, axis: .vertical)
+                                .padding(.top, 8)
+                                .fontDesign(.monospaced)
+                                .textInputAutocapitalization(.never)
+                        }
+                        .padding(.horizontal, 16)
+                        
+                        Spacer()
+                    }
+                    .navigationTitle("Create List")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button("Cancel") {
+                                print("cancel button")
+                                if !self.listName.isEmpty || !self.listDescription.isEmpty {
+                                    self.isAlertShown = true
+                                } else {
+                                    self.showingCreateListSheet = false
+                                }
+                            }
+                        }
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button("Create") {
+                                createStarredList()
+                                self.showingCreateListSheet.toggle()
+                            }
+                            .fontWeight(.semibold)
+                            .foregroundStyle(listName.isEmpty ? Color(UIColor.lightGray) : .accentColor)
+                        }
+                    }
+                    .alert("Unsaved Changes", isPresented: $isAlertShown) {
+                        Button(role: .destructive) {
+//                            handle the deletion
+                            self.showingCreateListSheet = false
+                            self.listName = ""
+                            self.listDescription = ""
+                        } label: {
+                            Text("Discard")
+                        }
+                    } message: {
+                        Text("Are you sure you want to discard this new list? Your message will be lost.")
+                    }
+                }
+            }
         }
         .task {
             await viewModel.loadAuthenticatedUser()
             await viewModel.fetchStarredRepositories(username: username)
+        }
+    }
+    
+    func createStarredList() {
+        print("create starred list")
+        print("list name", self.listName)
+        print("list description ", self.listDescription)
+        
+        do {
+            let newList = StarredList(title: self.listName, listDescription: self.listDescription, repositories: [])
+            
+            self.modelContext.insert(newList)
+            print(newList.id)
+            try self.modelContext.save()
+            print(newList.id)
+            
+            self.listName = ""
+            self.listDescription = ""
+        } catch {
+            print("Failed to save the list: \(error)")
         }
     }
 }

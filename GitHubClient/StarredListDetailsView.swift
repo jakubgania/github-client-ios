@@ -49,7 +49,7 @@ struct StarredListDetailsView: View {
                     Text("Add repositories to this list")
                         .fontWeight(.semibold)
                     
-                    Text("Star repositories on GitHub to keep track of your favorite projects and inspirantional code.")
+                    Text("Star repositories on GitHub to keep track of your favorite projects and inspirational code.")
                         .multilineTextAlignment(.center)
                         .foregroundStyle(Color(UIColor.lightGray))
                     
