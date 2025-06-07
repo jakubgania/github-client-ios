@@ -14,7 +14,7 @@ struct StarredItem: Identifiable, Codable {
     let htmlUrl: String
     let description: String?
     let stargazersCount: Int
-    let langugage: String?
+    let language: String?
     let topics: [String]
 }
 

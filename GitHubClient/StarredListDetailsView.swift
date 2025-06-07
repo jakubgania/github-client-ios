@@ -11,11 +11,11 @@ import SwiftData
 struct StarredListDetailsView: View {
     @Environment(\.modelContext) private var modelContext
     
-    @Query var starredList: [StarredList]
+    @Query var starredLists: [StarredList]
     
     init(listTitle: String) {
         self.listTitle = listTitle
-        _starredList = Query(filter: #Predicate { $0.title == listTitle })
+        _starredLists = Query(filter: #Predicate { $0.title == listTitle })
     }
     
     var listTitle: String
@@ -26,15 +26,15 @@ struct StarredListDetailsView: View {
                 HStack {
                     Image(systemName: "bookmark")
                     
-                    if starredList.count == 1 {
+                    if starredLists.count == 1 {
                         Text("1 repository")
                     } else {
-                        Text("\(starredList.count) repositories")
+                        Text("\(starredLists.count) repositories")
                     }
                 }
                 .foregroundStyle(.gray)
                 
-                if let list = starredList.first {
+                if let list = starredLists.first {
                     List(list.repositories) { repository in
                         Text(repository.name ?? "Unknown Repository")
                     }

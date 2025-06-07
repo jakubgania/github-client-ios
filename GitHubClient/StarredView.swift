@@ -19,9 +19,16 @@ struct StarredView: View {
     @State private var listName: String = ""
     @State private var listDescription: String = ""
     @State private var showingCreateListSheet: Bool = false
+    @State private var showingSelectListSheet: Bool = false
     @State private var isAlertShown = false
+    @State private var isAlertShownDeleteList = false
+    @State private var selectedRepository: StarredItem?
     
     var username: String = ""
+    
+    var listHeight: CGFloat {
+        return CGFloat(128 + (starredLists.count > 0 ? starredLists.count * 42 : 0))
+    }
     
     var body: some View {
         NavigationStack {
@@ -88,9 +95,21 @@ struct StarredView: View {
                         } else {
                             Section {
                                 ForEach(starredLists, id: \.title) { starredList in
-//                                    NavigationLink(destination: )
+                                   NavigationLink(destination: StarredListDetailsView(listTitle: starredList.title)) {
+                                        HStack {
+                                            Text("\(starredList.title)")
+                                            
+                                            Spacer()
+                                            
+                                            Text("\(starredList.repositories.count)")
+                                                .foregroundStyle(.gray)
+                                        }
+                                    }
                                 }
+                                .onDelete(perform: deleteItems)
+                                .listStyle(.plain)
                             }
+                            .listSectionSeparator(.hidden)
                         }
                         
                         HStack {
@@ -110,6 +129,49 @@ struct StarredView: View {
                         .padding(.vertical, 16)
                         .padding(.horizontal, 16)
                         .background(Color.gray.opacity(0.06))
+                    }
+                    
+                    Section {
+                        ForEach(searchText.isEmpty ? viewModel.starredRepositories : viewModel.starredRepositories.filter {
+                            $0.topics.contains(searchText.lowercased()) ||
+                            $0.name.lowercased().contains(searchText.lowercased())
+                        }, id: \.name) { item in
+                            VStack(alignment: .leading) {
+                                HStack(spacing: 12) {
+                                    Avatar(urlString: item.owner.avatarUrl, size: 24, type: Avatar.AvatarType(from: item.owner.type))
+                                    
+                                    Text(item.owner.login)
+                                        .font(.subheadline)
+                                        .foregroundStyle(.secondary)
+                                    
+                                    Spacer()
+                                    
+                                    if viewModel.me?.login == username {
+                                        Button {
+                                            self.showingSelectListSheet.toggle()
+                                            self.selectedRepository = item
+                                        } label: {
+                                            Image(systemName: "ellipsis")
+                                                .foregroundStyle(Color(UIColor.lightGray))
+                                        }
+                                    }
+                                }
+                                
+                                VStack(alignment: .leading) {
+                                    Text(item.name)
+                                        .font(.callout)
+                                        .fontWeight(.semibold)
+                                        .padding(.top, 1)
+                                        .padding(.bottom, 3)
+                                    
+                                    if let description = item.description, !description.isEmpty {
+                                        Text(description)
+                                            .lineLimit(5)
+                                            .font(.callout)
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
                 .autocorrectionDisabled()
@@ -174,6 +236,89 @@ struct StarredView: View {
                     }
                 }
             }
+            .sheet(isPresented: $showingSelectListSheet, onDismiss: didDismissSelectedLists) {
+                NavigationStack {
+                    VStack(alignment: .leading) {
+                        HStack {
+                            Spacer()
+                            
+                            Button("Done") {
+                                self.showingSelectListSheet = false
+                            }
+                            .fontWeight(.semibold)
+                        }
+                        .frame(maxHeight: 40)
+                        .padding(.horizontal, 20)
+                        .overlay(
+                            Text("Select Lists")
+                                .fontWeight(.semibold),
+                            alignment: .center
+                        )
+                        .padding(.bottom, -8)
+                        
+                        Divider()
+                        
+                        List {
+                            if !starredLists.isEmpty {
+                                ForEach(starredLists, id: \.title) { starredList in
+                                    Button {
+                                        print(starredList.title)
+                                        addRepoToSelectedList(listTitle: starredList.title)
+                                    } label: {
+                                        HStack {
+                                            Text("\(starredList.title)")
+                                            
+                                            Spacer()
+                                            
+                                            if checkIfRepositoryIsAlreadyInList(starredList: starredList) {
+                                                Image(systemName: "checkmark.circle.fill")
+                                                    .foregroundStyle(.blue)
+                                            }
+                                        }
+                                        .padding(0)
+                                    }
+                                }
+                            }
+                            
+                            Section {
+                                HStack {
+                                    Button {
+                                        self.showingCreateListSheet.toggle()
+                                    } label: {
+                                        HStack {
+                                            Image(systemName: "plus")
+                                            Text("Create list")
+                                        }
+                                        .ignoresSafeArea(.all)
+                                        .foregroundStyle(.blue)
+                                    }
+                                }
+                            }
+                            .listSectionSeparator(.hidden)
+                            .padding(.bottom, 6)
+                        }
+                        .listStyle(.inset)
+                        .ignoresSafeArea(.all)
+                        .background(.green)
+                        .padding(.top, -4)
+                    }
+                    .safeAreaInset(edge: .bottom) {
+                        Color.clear
+                            .frame(height: 40)
+                            .background(Material.bar)
+                    }
+                    .presentationDetents([.height(listHeight)])
+                }
+            }
+            .alert("Delete list?", isPresented: $isAlertShownDeleteList) {
+                Button(role: .destructive) {
+                    
+                } label: {
+                    Text("Cancel")
+                }
+            } message: {
+                Text("The 1 repositories in this list will remain starred.")
+            }
         }
         .task {
             await viewModel.loadAuthenticatedUser()
@@ -199,6 +344,46 @@ struct StarredView: View {
         } catch {
             print("Failed to save the list: \(error)")
         }
+    }
+    
+    func deleteItems(at offsets: IndexSet) {
+        print("delete items")
+        print("offsets ", offsets)
+        
+        for index in offsets {
+            let itemToDelete = starredLists[index]
+            self.modelContext.delete(itemToDelete)
+        }
+        
+        try? self.modelContext.save()
+    }
+    
+    func didDismissSelectedLists() {
+        self.showingCreateListSheet = false
+    }
+    
+    func addRepoToSelectedList(listTitle: String) {
+        print("add repo to selected list")
+        
+        if let index = self.starredLists.firstIndex (where: { $0.title == listTitle }) {
+            let list = self.starredLists[index]
+            
+            list.repositories.append(
+                StarredRepository(
+                    name: self.selectedRepository?.name ?? "",
+                    repositoryDescription: self.selectedRepository?.description ?? "",
+                    language: self.selectedRepository?.language,
+                    stargazersCount: self.selectedRepository?.stargazersCount ?? 0,
+                    starredList: self.starredLists[index]
+                )
+            )
+            
+            try? self.modelContext.save()
+        }
+    }
+    
+    func checkIfRepositoryIsAlreadyInList(starredList: StarredList) -> Bool {
+        return starredList.repositories.contains { $0.name == self.selectedRepository?.name }
     }
 }
 
