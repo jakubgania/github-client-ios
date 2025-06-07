@@ -10,6 +10,7 @@ import SwiftData
 
 struct StarredView: View {
     @Environment(\.modelContext) private var modelContext
+//    @Environment(\.dismiss) var dismiss
     
     @StateObject private var viewModel = GitHubViewModel()
     
@@ -302,12 +303,7 @@ struct StarredView: View {
                         .background(.green)
                         .padding(.top, -4)
                     }
-                    .safeAreaInset(edge: .bottom) {
-                        Color.clear
-                            .frame(height: 40)
-                            .background(Material.bar)
-                    }
-                    .presentationDetents([.height(listHeight)])
+                    .presentationDetents([.medium])
                 }
             }
             .alert("Delete list?", isPresented: $isAlertShownDeleteList) {
@@ -359,7 +355,7 @@ struct StarredView: View {
     }
     
     func didDismissSelectedLists() {
-        self.showingCreateListSheet = false
+        self.showingSelectListSheet = false
     }
     
     func addRepoToSelectedList(listTitle: String) {

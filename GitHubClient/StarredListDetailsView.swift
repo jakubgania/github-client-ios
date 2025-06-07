@@ -15,7 +15,7 @@ struct StarredListDetailsView: View {
     
     init(listTitle: String) {
         self.listTitle = listTitle
-        _starredLists = Query(filter: #Predicate { $0.title == listTitle })
+        _starredLists = Query(filter: #Predicate<StarredList> { $0.title == listTitle })
     }
     
     var listTitle: String
@@ -26,10 +26,10 @@ struct StarredListDetailsView: View {
                 HStack {
                     Image(systemName: "bookmark")
                     
-                    if starredLists.count == 1 {
+                    if starredLists.first?.repositories.count == 1 {
                         Text("1 repository")
                     } else {
-                        Text("\(starredLists.count) repositories")
+                        Text("\(starredLists.first?.repositories.count ?? 0) repositories")
                     }
                 }
                 .foregroundStyle(.gray)
