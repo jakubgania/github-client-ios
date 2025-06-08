@@ -8,6 +8,72 @@
 import SwiftUI
 import SwiftData
 
+enum ProgrammingLanguageColor: String {
+    case javascript = "JavaScript"
+    case python = "Python"
+    case typescript = "TypeScript"
+    case go = "Go"
+    case csharp = "C#"
+    case html = "HTML"
+    case mako = "Mako"
+    case php = "PHP"
+    case vue = "Vue"
+    case cplusplus = "C++"
+    case rust = "Rust"
+    case dart = "Dart"
+    case dockerfile = "Dockerfile"
+    case c = "C"
+    case shell = "Shell"
+    case bicep = "Bicep"
+    case css = "CSS"
+    case powershell = "PowerShell"
+    
+    var color: Color {
+        switch self {
+        case .javascript:
+            return Color(hex: "#f1e05a")
+        case .python:
+            return Color(hex: "#3572A5")
+        case .typescript:
+            return Color(hex: "#3178c6")
+        case .go:
+            return Color(hex: "#00ADD8")
+        case .csharp:
+            return Color(hex: "#178600")
+        case .html:
+            return Color(hex: "#e34c26")
+        case .mako:
+            return Color(hex: "#7e858d")
+        case .php:
+            return Color(hex: "#4F5D95")
+        case .vue:
+            return Color(hex: "#41b883")
+        case .cplusplus:
+            return Color(hex: "#f34b7d")
+        case .rust:
+            return Color(hex: "#dea584")
+        case .dart:
+            return Color(hex: "#00B4AB")
+        case .dockerfile:
+            return Color(hex: "#384d54")
+        case .c:
+            return Color(hex: "#555555")
+        case .shell:
+            return Color(hex: "#89e051")
+        case .bicep:
+            return Color(hex: "#519aba")
+        case .css:
+            return Color(hex: "#563d7c")
+        case .powershell:
+            return Color(hex: "#012456")
+        }
+    }
+    
+    init?(language: String) {
+        self.init(rawValue: language)
+    }
+}
+
 struct StarredView: View {
     @Environment(\.modelContext) private var modelContext
 //    @Environment(\.dismiss) var dismiss
@@ -184,7 +250,24 @@ struct StarredView: View {
                                             .foregroundStyle(.yellow)
                                     }
                                     .padding(.leading, -6)
+                                    
+                                    if let language = item.language, !language.isEmpty {
+                                        if let programmingLanguage = ProgrammingLanguageColor(language: language) {
+                                            Label {
+                                                Text(language)
+                                                    .font(.subheadline)
+                                                    .foregroundStyle(.secondary)
+                                                    .padding(.leading, -18)
+                                            } icon: {
+                                                Image(systemName: "circle.fill")
+                                                    .font(.caption2)
+                                                    .foregroundStyle(programmingLanguage.color)
+                                            }
+                                            .padding(.leading, -6)
+                                        }
+                                    }
                                 }
+                                .padding(.vertical, 0.4)
                             }
                         }
                     }
@@ -253,7 +336,7 @@ struct StarredView: View {
             }
             .sheet(isPresented: $showingSelectListSheet, onDismiss: didDismissSelectedLists) {
                 NavigationStack {
-                    VStack(alignment: .leading) {
+                    VStack(alignment: .leading, spacing: 0) {
                         HStack {
                             Spacer()
                             
@@ -262,14 +345,14 @@ struct StarredView: View {
                             }
                             .fontWeight(.semibold)
                         }
-                        .frame(maxHeight: 40)
+                        .frame(maxHeight: 52)
                         .padding(.horizontal, 20)
                         .overlay(
-                            Text("Select Lists")
-                                .fontWeight(.semibold),
+                            Text("Select lists")
+                                .fontWeight(.medium),
                             alignment: .center
                         )
-                        .padding(.bottom, -8)
+                        .background(.white)
                         
                         Divider()
                         
@@ -310,14 +393,14 @@ struct StarredView: View {
                                 }
                             }
                             .listSectionSeparator(.hidden)
-                            .padding(.bottom, 6)
+//                                .padding(.bottom, 6)
                         }
                         .listStyle(.inset)
-                        .ignoresSafeArea(.all)
-                        .background(.green)
-                        .padding(.top, -4)
+                        .background(Material.bar)
+//                            .padding(.top, -4)
+                        .scrollContentBackground(.hidden)
                     }
-                    .presentationDetents([.medium])
+                    .presentationDetents([.medium, .large])
                 }
             }
             .alert("Delete list?", isPresented: $isAlertShownDeleteList) {
