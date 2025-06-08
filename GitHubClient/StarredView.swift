@@ -171,6 +171,20 @@ struct StarredView: View {
                                             .font(.callout)
                                     }
                                 }
+                                
+                                HStack(spacing: 16) {
+                                    Label {
+                                        Text("\(item.stargazersCount)")
+                                            .font(.subheadline)
+                                            .foregroundStyle(.secondary)
+                                            .padding(.leading, -18)
+                                    } icon: {
+                                        Image(systemName: "star.fill")
+                                            .font(.caption2)
+                                            .foregroundStyle(.yellow)
+                                    }
+                                    .padding(.leading, -6)
+                                }
                             }
                         }
                     }
