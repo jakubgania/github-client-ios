@@ -21,6 +21,7 @@ extension Color {
     static let slate70 = Color(red: 244.5 / 255, green: 247.5 / 255, blue: 250.5 / 255)
     static let slate100 = Color(red: 241 / 255, green: 245 / 255, blue: 249 / 255)
     static let gray50 = Color(red: 249 / 255, green: 250 / 255, blue: 251 / 255)
+    static let gray100  = Color(red: 243 / 255, green: 244 / 255, blue: 246 / 255)
 }
 
 struct Search: View {
@@ -117,7 +118,7 @@ struct ContentView: View {
     }
     
     @State private var selectedButton: Int? = 0  // keep track of selected button if needed
-    @State private var isSearchFieldActive = true // detect when search field is activated
+    @State private var isSearchFieldActive = false // detect when search field is activated
     
     @FocusState private var isTextFieldActive: Bool
     @State private var suggestions = ["vercel", "apple", "microsoft", "google", "tensorflow", "aws", "ibm", "github", "facebookresearch"]
@@ -135,11 +136,11 @@ struct ContentView: View {
                                     .focused($isTextFieldActive)
                                 
                                 Button {
+                                    resetScrollView()
                                     selectedViewType = .search
                                     selectedButton = 0
-                                    print("test")
+                                    
                                     Task {
-                                        print("search")
                                         await viewModel.searchUser(username: userInput)
                                     }
                                 } label: {
@@ -154,12 +155,13 @@ struct ContentView: View {
                     }
                     .padding(.horizontal)
                     
-                    if isTextFieldActive {
+                    if !isTextFieldActive {
                         ScrollViewReader { proxy in
                             ScrollView(.horizontal) {
                                 HStack {
                                     Button {
                                         selectedViewType = .search
+                                        selectedButton = 0
                                     } label: {
                                         HStack {
                                             Text("✨")
@@ -171,7 +173,7 @@ struct ContentView: View {
                                         .padding(.horizontal, 10)
                                         .padding(.vertical, 6)
                                     }
-                                    .background(selectedButton == 0 ? Color.gray.opacity(0.16) : Color.gray.opacity(0.1))
+                                    .background(selectedButton == 0 ? Color.gray100 : Color.gray50)
                                     .clipShape(.rect(cornerRadius: 12))
                                     .id(0)
                                     
@@ -189,7 +191,7 @@ struct ContentView: View {
                                         .padding(.horizontal, 10)
                                         .padding(.vertical, 6)
                                     }
-                                    .background(selectedButton == 1 ? Color.gray.opacity(0.16) : Color.gray.opacity(0.1))
+                                    .background(selectedButton == 1 ? Color.gray100 : Color.gray50)
                                     .clipShape(.rect(cornerRadius: 12))
                                     .id(1)
                                     
@@ -213,7 +215,7 @@ struct ContentView: View {
                                         .padding(.horizontal, 10)
                                         .padding(.vertical, 6)
                                     }
-                                    .background(selectedButton == 2 ? Color.gray.opacity(0.16) : Color.gray.opacity(0.1))
+                                    .background(selectedButton == 2 ? Color.gray100 : Color.gray50)
                                     .clipShape(.rect(cornerRadius: 12))
                                     .id(2)
                                     
@@ -237,7 +239,7 @@ struct ContentView: View {
                                         .padding(.horizontal, 10)
                                         .padding(.vertical, 6)
                                     }
-                                    .background(selectedButton == 3 ? Color.gray.opacity(0.16) : Color.gray.opacity(0.1))
+                                    .background(selectedButton == 3 ? Color.gray100 : Color.gray50)
                                     .clipShape(.rect(cornerRadius: 12))
                                     //.hoverEffectDisabled(true)
                                     .id(3)
@@ -262,7 +264,7 @@ struct ContentView: View {
                                         .padding(.horizontal, 10)
                                         .padding(.vertical, 6)
                                     }
-                                    .background(selectedButton == 4 ? Color.gray.opacity(0.16) : Color.gray.opacity(0.1))
+                                    .background(selectedButton == 4 ? Color.gray100 : Color.gray50)
                                     .clipShape(.rect(cornerRadius: 12))
                                     .id(4)
                                     
@@ -279,7 +281,7 @@ struct ContentView: View {
                                         .padding(.horizontal, 10)
                                         .padding(.vertical, 6)
                                     }
-                                    .background(selectedButton == 4 ? Color.gray.opacity(0.16) : Color.gray.opacity(0.1))
+                                    .background(selectedButton == 4 ? Color.gray100 : Color.gray50)
                                     .clipShape(.rect(cornerRadius: 12))
                                     .id(5)
                                 }
@@ -407,6 +409,10 @@ struct ContentView: View {
             viewModel.setContext(modelContext)
             await viewModel.loadAuthenticatedUser()
         }
+    }
+    
+    private func resetScrollView() {
+        isTextFieldActive = false
     }
 }
 
