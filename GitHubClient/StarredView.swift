@@ -268,6 +268,21 @@ struct StarredView: View {
                                     }
                                 }
                                 .padding(.vertical, 0.4)
+                                
+                                let listTitles = checkIfRepoIsAlreadyOnLists(repositoryName: item.name, lists: self.starredLists)
+                                if !listTitles.isEmpty {
+                                    HStack {
+                                        Image(systemName: "list.bullet")
+                                        
+                                        if listTitles.count == 1 {
+                                            Text(listTitles[0])
+                                                .foregroundStyle(.secondary)
+                                        } else {
+                                            Text("\(listTitles.last!) + \(listTitles.count - 1)")
+                                                .foregroundStyle(.secondary)
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -456,12 +471,8 @@ struct StarredView: View {
     }
     
     func addRepoToSelectedList(listTitle: String) {
-        print("add repo to selected list")
-        
         if let index = self.starredLists.firstIndex (where: { $0.title == listTitle }) {
-            let list = self.starredLists[index]
-            
-            list.repositories.append(
+            self.starredLists[index].repositories.append(
                 StarredRepository(
                     name: self.selectedRepository?.name ?? "",
                     repositoryDescription: self.selectedRepository?.description ?? "",
@@ -477,6 +488,18 @@ struct StarredView: View {
     
     func checkIfRepositoryIsAlreadyInList(starredList: StarredList) -> Bool {
         return starredList.repositories.contains { $0.name == self.selectedRepository?.name }
+    }
+    
+    func checkIfRepoIsAlreadyOnLists(repositoryName: String, lists: [StarredList]) -> [String] {
+        var matchingLists: [String] = []
+        
+        for list in lists {
+            if list.repositories.contains(where: { $0.name == repositoryName }) {
+                matchingLists.append(list.title)
+            }
+        }
+        
+        return matchingLists
     }
 }
 
