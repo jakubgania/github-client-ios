@@ -83,6 +83,11 @@ final class GitHubService {
         let request = try makeRequest(path: "/users/\(username)/starred")
         return try await networkClient.fetch(request)
     }
+    
+    func getRepositoryDetailsView(repositoryId: String) async throws -> RepositoryInfo {
+        let request = try makeRequest(path: "/repos/\(repositoryId)")
+        return try await networkClient.fetch(request)
+    }
 
 //    func fetchTrendingRepositories() async throws -> [TrendingRepository] {
 //        let request = try makeRequest(path: "/some/custom/trending-endpoint")
