@@ -10,6 +10,9 @@ import SwiftUI
 struct RepositoryDetailsView: View {
     @StateObject private var viewModel = GitHubViewModel()
     
+    @State private var topicDetails = false
+    @State private var selectedItem: String? = nil
+    
     var repositoryName: String
     
     var body: some View {
@@ -123,6 +126,102 @@ struct RepositoryDetailsView: View {
                     .background(Color.gray100)
                     .clipShape(.rect(cornerRadius: 8))
                 }
+                
+                if let topics = viewModel.repositoryDetails?.topics, !topics.isEmpty {
+                    Text("Topics:")
+                        .padding(.bottom, 8)
+                    
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(topics, id: \.self) { item in
+                                Button(item) {
+                                    self.topicDetails = true
+                                    self.selectedItem = item
+                                }
+                                .fontWeight(.medium)
+                                .padding(8)
+                                .foregroundStyle(.blue)
+                                .background(Color.gray100)
+                                .clipShape(.rect(cornerRadius: 8))
+                                .font(.subheadline)
+                                .sheet(isPresented: Binding( get: { topicDetails }, set: { topicDetails = $0 }), onDismiss: didDismiss) {
+                                    VStack(alignment: .leading) {
+                                        HStack {
+                                            Text(self.selectedItem ?? "no item")
+                                                .font(.title2)
+                                                .fontWeight(.bold)
+                                            
+                                            Spacer()
+                                        }
+                                        
+                                        Spacer()
+                                    }
+                                    .padding()
+                                    .padding(.top, 12)
+                                    .frame(maxWidth: .infinity)
+                                    .presentationDetents([.medium, .large])
+                                    .presentationContentInteraction(.resizes)
+                                }
+                            }
+                        }
+                    }
+                    .padding(.bottom, 8)
+                }
+                
+                VStack {
+                    List {
+                        if let issuesUrl = viewModel.repositoryDetails?.issuesUrl {
+                            NavigationLink {
+//                                issues view
+                            } label: {
+                                Text("Issues")
+                                    .padding(.vertical, 10)
+                            }
+                            .listRowInsets(.init())
+                            .listRowSeparator(.hidden)
+                        }
+                        
+                        if (viewModel.repositoryDetails?.pullsUrl) != nil {
+                            NavigationLink {
+//                                pulls view
+                            } label: {
+                                Text("Pull Requests")
+                                    .padding(.vertical, 10)
+                            }
+                            .listRowInsets(.init())
+                            .listRowSeparator(.hidden)
+                        }
+                        
+                        if let contributorsUrl = viewModel.repositoryDetails?.contributorsUrl {
+                            NavigationLink {
+//                                contributors view
+                            } label:{
+                                Text("Contributors")
+                                    .padding(.vertical, 10)
+                            }
+                            .listRowInsets(.init())
+                            .listRowSeparator(.hidden)
+                        }
+                    }
+                    .scrollContentBackground(.hidden)
+                    .listStyle(.plain)
+                    .ignoresSafeArea()
+                    .frame(maxHeight: 120)
+                }
+                .padding(.bottom, 10)
+                
+                if let repositoryUrl = viewModel.repositoryDetails?.htmlUrl {
+                    let url = URL(string: repositoryUrl)
+                    
+                    if let url {
+                        Link(destination: url, label: {
+                            Text("Visit Repository")
+                                .foregroundStyle(.black)
+                        })
+                    }
+                }
+                
+                Spacer()
             }
         }
         .padding()
@@ -139,6 +238,10 @@ struct RepositoryDetailsView: View {
         }
         
         return host + url.path
+    }
+    
+    func didDismiss() {
+        self.topicDetails = false
     }
 }
 

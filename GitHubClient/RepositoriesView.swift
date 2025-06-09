@@ -23,7 +23,7 @@ struct RepositoriesView: View {
                         $0.name?.lowercased().contains(searchText.lowercased()) ?? false
                     }, id: \.name) { item in
                         NavigationLink {
-                            Text("repo details view")
+                            RepositoryDetailsView(repositoryName: username + "/" + (item.name ?? ""))
                         } label: {
                             VStack(alignment: .leading, spacing: 10) {
                                 Text(item.name ?? "")
