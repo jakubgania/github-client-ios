@@ -12,6 +12,9 @@ struct RepositoryDetailsView: View {
     
     @State private var topicDetails = false
     @State private var selectedItem: String? = nil
+    @State private var showAISummarySheet: Bool = false
+    
+    @State private var angle: Double = 0
     
     var repositoryName: String
     
@@ -224,9 +227,10 @@ struct RepositoryDetailsView: View {
                 }
                 
                 Button {
-                    
+                    showAISummarySheet.toggle()
                 } label: {
                     Image(systemName: "apple.intelligence")
+                        .symbolEffect(.breathe)
                         .bold()
                     
                     Text("AI Summary")
@@ -244,6 +248,34 @@ struct RepositoryDetailsView: View {
         .padding()
         .task {
             await viewModel.fetchRepositoryDetails(repositoryId: repositoryName)
+        }
+        .sheet(isPresented: $showAISummarySheet) {
+            VStack(alignment: .leading) {
+                HStack {
+                    Image(systemName: "sparkles")
+                        .symbolEffect(.bounce)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.yellow)
+                    
+                    Text("AI Summary")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                    
+                    Spacer()
+                }
+                
+//                Divider()
+                
+                Text("This is a long description that should appear across multiple lines in SwiftUI. You can control its layout, alignment, and line limits easily.")
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(nil) // or remove entirely to show all line
+                    .padding(.top, 8)
+                
+                Spacer()
+            }
+            .padding()
+            .padding(.top, 12)
+            .frame(maxWidth: .infinity)
         }
     }
     
