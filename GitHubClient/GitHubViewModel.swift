@@ -27,6 +27,7 @@ final class GitHubViewModel: ObservableObject {
     @Published var followers: [Follower] = []
     @Published var starredRepositories: [StarredItem] = []
     @Published var repositoryDetails: RepositoryInfo?
+    @Published var repositoryIssues: [Issue] = []
     @Published var errorMessage: String?
     
     @Published var isFetchingFollowers = false
@@ -172,6 +173,26 @@ final class GitHubViewModel: ObservableObject {
         
         do {
             self.repositoryDetails = try await repositoryDetails
+        } catch {
+            self.errorMessage = error.localizedDescription
+        }
+    }
+    
+    func fetchRepositoryIssues(repositoryId: String) async {
+        async let repositoryIssues = service.getRepositoryIssues(repositoryId: repositoryId)
+        
+        do {
+            self.repositoryIssues = try await repositoryIssues
+        } catch {
+            self.errorMessage = error.localizedDescription
+        }
+    }
+    
+    func fetchRepositoryIssuesOpen(repositoryId: String) async {
+        async let repositoryIssuesOpen = service.getRepositoryIssuesOpen(repositoryId: repositoryId)
+        
+        do {
+            self.repositoryIssues = try await repositoryIssuesOpen
         } catch {
             self.errorMessage = error.localizedDescription
         }
