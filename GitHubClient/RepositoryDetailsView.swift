@@ -110,6 +110,7 @@ struct RepositoryDetailsView: View {
                             .bold()
                         
                         Text("Star")
+                            .font(.subheadline)
                             .foregroundStyle(.black)
                             .padding(.vertical, 10)
                     }
@@ -140,6 +141,7 @@ struct RepositoryDetailsView: View {
                                 }
                                 .fontWeight(.medium)
                                 .padding(8)
+                                .padding([.trailing, .leading], 6)
                                 .foregroundStyle(.blue)
                                 .background(Color.gray100)
                                 .clipShape(.rect(cornerRadius: 8))
@@ -220,6 +222,21 @@ struct RepositoryDetailsView: View {
                         })
                     }
                 }
+                
+                Button {
+                    
+                } label: {
+                    Image(systemName: "apple.intelligence")
+                        .bold()
+                    
+                    Text("AI Summary")
+                        .font(.subheadline)
+                        .foregroundStyle(.black)
+                        .padding(.vertical, 10)
+                }
+                .frame(maxWidth: .infinity)
+                .background(Color.gray100)
+                .clipShape(.rect(cornerRadius: 8))
                 
                 Spacer()
             }
