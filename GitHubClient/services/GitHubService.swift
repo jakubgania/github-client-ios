@@ -8,6 +8,12 @@
 import Foundation
 import SwiftData
 
+enum IssueState: String {
+    case open
+    case closed
+    case all
+}
+
 final class GitHubService {
     private let baseURL = "https://api.github.com"
     private let apiVersion = "2022-11-28"
@@ -96,6 +102,15 @@ final class GitHubService {
     
     func getRepositoryIssuesOpen(repositoryId: String) async throws -> [Issue] {
         let request = try makeRequest(path: "/repos/\(repositoryId)/issues?state=open")
+        return try await networkClient.fetch(request)
+    }
+    
+    func getRepositoryIssuesByState(repositoryId: String, state: IssueState? = nil) async throws -> [Issue] {
+        var queryParams: [String: String]? = nil
+        if let state = state {
+            queryParams = ["state": state.rawValue]
+        }
+        let request = try makeRequest(path: "/repos/\(repositoryId)/issues", queryParams: queryParams)
         return try await networkClient.fetch(request)
     }
 

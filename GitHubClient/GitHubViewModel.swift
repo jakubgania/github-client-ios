@@ -197,4 +197,14 @@ final class GitHubViewModel: ObservableObject {
             self.errorMessage = error.localizedDescription
         }
     }
+    
+    func fetchRepositoryIssuesByState(repositoryId: String, state: IssueState) async {
+        async let repositoryIssuesByState = service.getRepositoryIssuesByState(repositoryId: repositoryId, state: state)
+        
+        do {
+            self.repositoryIssues = try await repositoryIssuesByState
+        } catch {
+            self.errorMessage = error.localizedDescription
+        }
+    }
 }

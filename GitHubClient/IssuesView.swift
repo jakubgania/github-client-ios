@@ -16,6 +16,8 @@ struct IssuesView: View {
     @State private var buttonClosedState: Bool = false
     @State private var buttonAllState: Bool = false
     
+//    @State private var selectedState: IssueState = .open
+    
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading) {
@@ -25,8 +27,9 @@ struct IssuesView: View {
                         buttonClosedState = false
                         buttonAllState = false
                         
+//                        selectedState = .open
                         Task {
-                            await viewModel.fetchRepositoryIssuesOpen(repositoryId: repositoryName)
+                            await viewModel.fetchRepositoryIssuesByState(repositoryId: repositoryName, state: .open)
                         }
                     } label: {
                         Text("Open")
