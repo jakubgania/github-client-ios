@@ -14,3 +14,9 @@ struct Issue: Identifiable, Codable {
     let state: String?
     let createdAt: String?
 }
+
+enum IssueState: String, CaseIterable {
+    case open
+    case closed
+    case all
+}

@@ -8,12 +8,6 @@
 import Foundation
 import SwiftData
 
-enum IssueState: String {
-    case open
-    case closed
-    case all
-}
-
 final class GitHubService {
     private let baseURL = "https://api.github.com"
     private let apiVersion = "2022-11-28"

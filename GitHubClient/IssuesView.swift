@@ -16,31 +16,30 @@ struct IssuesView: View {
     @State private var buttonClosedState: Bool = false
     @State private var buttonAllState: Bool = false
     
-//    @State private var selectedState: IssueState = .open
-    
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading) {
                 HStack {
-                    Button {
-                        buttonOpenState = true
-                        buttonClosedState = false
-                        buttonAllState = false
-                        
-//                        selectedState = .open
-                        Task {
-                            await viewModel.fetchRepositoryIssuesByState(repositoryId: repositoryName, state: .open)
+                    ForEach(IssueState.allCases, id: \.self) { state in
+                        Button {
+                            buttonOpenState = true
+                            buttonClosedState = false
+                            buttonAllState = false
+                            
+                            Task {
+                                await viewModel.fetchRepositoryIssuesByState(repositoryId: repositoryName, state: state)
+                            }
+                        } label: {
+                            Text(state.rawValue.capitalized)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 4)
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(buttonOpenState ? .white : .black)
                         }
-                    } label: {
-                        Text("Open")
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 4)
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(buttonOpenState ? .white : .black)
+                        .background(buttonOpenState ? Color.black.opacity(0.8) : Color.gray.opacity(0.1))
+                        .clipShape(.rect(cornerRadius: 14))
                     }
-                    .background(buttonOpenState ? Color.black.opacity(0.8) : Color.gray.opacity(0.1))
-                    .clipShape(.rect(cornerRadius: 14))
                 }
                 .padding(.leading)
                 .padding(.vertical, 10)
