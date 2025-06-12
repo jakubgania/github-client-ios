@@ -1,3 +1,15 @@
 
 .DS_Store
-xcuserdata/
+app/xcuserdata/
+
+# backend-service virtual environments
+backend-service/.venv/
+backend-service/venv/
+
+# Python bytecode
+backend-service/__pycache__/
+
+# local JSON data dumps
+backend-service/developers.json
+backend-service/repositories.json
+backend-service/topics.json
