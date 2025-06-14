@@ -180,6 +180,10 @@ struct ContentView: View {
                                     Button {
                                         selectedViewType = .trendingRepositories
                                         selectedButton = 1
+                                        
+                                        Task {
+                                            await viewModel.fetchTrendingRepositories()
+                                        }
                                     } label: {
                                         HStack {
                                             Text("🚀")
@@ -300,11 +304,21 @@ struct ContentView: View {
                             }
                         }
                         
+                        if !viewModel.trendingRepositories.isEmpty {
+                            Text("\(viewModel.trendingRepositories.count)")
+                        }
+                        
                         switch selectedViewType {
                         case .search:
                             Search(items: items)
                         case .trendingRepositories:
-                            Text("view for trending repositories")
+//                            TrendingRepositoriesView()
+//                            TrendingRepositoriesView(viewModel: viewModel.trendingRepositories)
+                            TrendingRepositoriesView(trendingRepositories: viewModel.trendingRepositories)
+//                                .onAppear {
+//                                    Task { await viewModel.fetchTrendingRepositories() }
+//                                    }
+//                            Text("view for trending repositories")
                         case .trendingDevelopers:
                             Text("view for trending developers")
                         case .popularTopics:

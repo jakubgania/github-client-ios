@@ -14,8 +14,15 @@ final class GitHubService {
     private let networkClient = NetworkClient()
     private let keychain = KeychainManager.shared
 
-    private func makeRequest(path: String, method: String = "GET", requiresAuth: Bool = false, queryParams: [String: String]? = nil) throws -> URLRequest {
-        var urlComponents = URLComponents(string: baseURL + path)
+    private func makeRequest(path: String,
+                             method: String = "GET",
+                             requiresAuth: Bool = false,
+                             queryParams: [String: String]? = nil,
+                             overrideBaseURL: String? = nil) throws -> URLRequest {
+        
+        let finalBaseURL = overrideBaseURL ?? baseURL
+        var urlComponents = URLComponents(string: finalBaseURL + path)
+        
         if let queryParams = queryParams {
             urlComponents?.queryItems = queryParams.map { URLQueryItem(name: $0.key, value: $0.value) }
         }
@@ -26,8 +33,15 @@ final class GitHubService {
 
         var request = URLRequest(url: url)
         request.httpMethod = method
-        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-        request.setValue(apiVersion, forHTTPHeaderField: "X-GitHub-Api-Version")
+        
+//        if !finalBaseURL.contains("github.com") {
+//            request.setValue("application/json", forHTTPHeaderField: "Accept")
+//        }
+        
+        if finalBaseURL.contains("github.com") {
+            request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+            request.setValue(apiVersion, forHTTPHeaderField: "X-GitHub-Api-Version")
+        }
 
         if requiresAuth {
             guard let token = keychain.getToken() else {
@@ -108,10 +122,36 @@ final class GitHubService {
         return try await networkClient.fetch(request)
     }
 
-//    func fetchTrendingRepositories() async throws -> [TrendingRepository] {
-//        let request = try makeRequest(path: "/some/custom/trending-endpoint")
-//        return try await networkClient.fetch(request)
-//    }
+    func getTrendingRepositories() async throws -> [TrendingRepository] {
+        print("get trending repositories")
+        let request = try makeRequest(path: "/trending-repositories", requiresAuth: false, overrideBaseURL: "http://192.168.178.30:8000")
+        return try await networkClient.fetch(request)
+    }
+    
+    func getTrendingRepositories2() async throws -> [TrendingRepository] {
+            // point at your local/trending service
+            let overrideURL = "http://192.168.178.30:8000"
+            // Build the request (no auth needed)
+            var request = try makeRequest(
+                path: "/trending-repositories",
+                requiresAuth: false,
+                overrideBaseURL: overrideURL
+            )
+            // ensure the server knows we want JSON back
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+//        request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+            // optional: log for debugging
+            print("🔍 Sending request to:", request.url?.absoluteString ?? "-")
+
+            // perform the network call and decode
+            let repos: [TrendingRepository] = try await networkClient.fetch(request)
+
+            // optional: log result count
+            print("✅ Fetched \(repos.count) trending repos")
+
+            return repos
+        }
 
 //    func fetchTrendingDevelopers() async throws -> [TrendingDevelopers] {
 //        let request = try makeRequest(path: "/some/custom/devs-endpoint")
