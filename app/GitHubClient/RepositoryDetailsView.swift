@@ -71,6 +71,7 @@ struct RepositoryDetailsView: View {
                         if let stargazersCount = viewModel.repositoryDetails?.stargazerCount {
                             if stargazersCount > 0 {
 //                                stargzers view
+                                Text("strg")
                             } else {
                                 Text("\(stargazersCount)")
                                     .fontWeight(.semibold)
@@ -92,7 +93,7 @@ struct RepositoryDetailsView: View {
                         
                         if let forksCount = viewModel.repositoryDetails?.forksCount {
                             if forksCount > 0 {
-                                
+                                Text("test")
                             } else {
                                 Text("\(forksCount)")
                                     .fontWeight(.semibold)

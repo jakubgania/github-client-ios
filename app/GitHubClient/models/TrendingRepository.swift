@@ -8,7 +8,7 @@
 import Foundation
 
 struct TrendingRepository: Codable, Identifiable {
-    var id: UUID = UUID()
+    var id: String { url ?? UUID().uuidString}
     let title: String?
     let url: String?
     let description: String?
@@ -18,18 +18,10 @@ struct TrendingRepository: Codable, Identifiable {
     let forks: String?
     let buildBy: [BuildBy]?
     let starsToday: String?
-    
-    enum CodingKeys: String, CodingKey {
-            case title, url, description, language
-            case languageColor = "language_color"
-            case stars, forks
-            case buildBy = "build_by"
-            case starsToday = "stars_today" // Map snake_case to camelCase
-        }
 }
 
 struct BuildBy: Codable, Identifiable {
-    var id: String { UUID().uuidString }
+    var id: String { avatarUrl ?? UUID().uuidString }
     let type: String?
     let avatarUrl: String?
 }

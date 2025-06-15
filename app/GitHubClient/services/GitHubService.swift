@@ -34,9 +34,9 @@ final class GitHubService {
         var request = URLRequest(url: url)
         request.httpMethod = method
         
-//        if !finalBaseURL.contains("github.com") {
-//            request.setValue("application/json", forHTTPHeaderField: "Accept")
-//        }
+        if !finalBaseURL.contains("github.com") {
+            request.setValue("application/json", forHTTPHeaderField: "Accept")
+        }
         
         if finalBaseURL.contains("github.com") {
             request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
@@ -99,6 +99,8 @@ final class GitHubService {
     }
     
     func getRepositoryDetailsView(repositoryId: String) async throws -> RepositoryInfo {
+        print("repo details")
+        print(repositoryId)
         let request = try makeRequest(path: "/repos/\(repositoryId)")
         return try await networkClient.fetch(request)
     }
