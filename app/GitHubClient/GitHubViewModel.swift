@@ -29,6 +29,7 @@ final class GitHubViewModel: ObservableObject {
     @Published var repositoryDetails: RepositoryInfo?
     @Published var repositoryIssues: [Issue] = []
     @Published var trendingRepositories: [TrendingRepository] = []
+    @Published var pinnedRepositories: [PinnedRepository] = []
     @Published var errorMessage: String?
     
     @Published var isFetchingFollowers = false
@@ -86,13 +87,16 @@ final class GitHubViewModel: ObservableObject {
             async let profile = service.getFullProfile(username: username)
             async let socialAccounts = service.getSocialAccounts(username: username)
             async let events = service.getEvents(username: username)
+            async let pinnedRepositoriesList = service.getPinnedRepositories(username: username)
             
             var fullProfile = try await profile
             let fetchedSocialAccounts = try await socialAccounts
             let fetchedEvents = try await events
+            let pinnedRepositories = try await pinnedRepositoriesList
             
             fullProfile.socialAccounts = fetchedSocialAccounts
             fullProfile.events = fetchedEvents
+            fullProfile.pinnedRepositories = pinnedRepositories
             
             self.fullProfile = fullProfile
         } catch {
@@ -218,4 +222,14 @@ final class GitHubViewModel: ObservableObject {
             self.errorMessage = error.localizedDescription
         }
     }
+    
+//    func fetchPinnedRepositories() async {
+//        async let pinnedRepositoriesList = service.getPinnedRepositories()
+//        
+//        do {
+//            self.pinnedRepositories = try await pinnedRepositoriesList
+//        } catch {
+//            self.errorMessage = error.localizedDescription
+//        }
+//    }
 }

@@ -159,4 +159,16 @@ final class GitHubService {
 //        let request = try makeRequest(path: "/some/custom/devs-endpoint")
 //        return try await networkClient.fetch(request)
 //    }
+    
+    func getPinnedRepositories(username: String) async throws -> [PinnedRepository] {
+        let payload: [String:String] = [
+            "token":  keychain.getToken() ?? "",
+            "username": username
+        ]
+        let bodyData = try JSONSerialization.data(withJSONObject: payload)
+        var request = try makeRequest(path: "/graphql/pinned-repos", method: "POST", requiresAuth: true, overrideBaseURL: "3")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = bodyData
+        return try await networkClient.fetch(request)
+    }
 }

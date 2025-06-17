@@ -27,6 +27,7 @@ struct GitHubProfile: Codable {
     let createdAt: String?
     let updatedAt: String?
     var events: [GitHubEvent]?
+    var pinnedRepositories: [PinnedRepository]?
 }
 
 struct SocialAccounts: Codable, Identifiable {

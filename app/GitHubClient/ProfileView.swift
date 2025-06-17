@@ -19,6 +19,9 @@ struct ProfileView: View {
     let context = CIContext()
     let filter = CIFilter.qrCodeGenerator()
     
+    private let itemWidthRatio: CGFloat = 0.8
+    private let itemHeight: CGFloat = 240
+    
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -140,7 +143,7 @@ struct ProfileView: View {
                     }
                     
                     Button {
-                        
+//                        follow
                     } label: {
                         HStack {
                             Image(systemName: "plus")
@@ -215,6 +218,47 @@ struct ProfileView: View {
                     .listStyle(.plain)
                     .listRowSpacing(6)
                     .frame(minHeight: 140)
+                    
+                    if !viewModel.pinnedRepositories.isEmpty {
+                        Text("Pinned")
+                        
+                        let screenWidth = UIScreen.main.bounds.width
+                        let itemWidth = screenWidth * itemWidthRatio
+                        
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 12) {
+                                ForEach(viewModel.fullProfile?.pinnedRepositories) { repository in
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        HStack(alignment: .center, spacing: 6) {
+                                            Avatar(
+                                                urlString: repository.owner.avatarUrl,
+                                                size: 22,
+                                                type: Avatar.AvatarType(from: "user")
+                                            )
+                                            
+                                            Text("\(repository.owner.login)")
+                                                .font(.callout)
+                                        }
+                                        
+                                        Text(repository.name)
+                                        Text(repository.description ?? "")
+                                            .font(.callout)
+                                            .lineLimit(6)
+                                        
+                                        Spacer()
+                                        
+                                        HStack {
+                                            Text("content")
+                                        }
+                                    }
+                                    .padding()
+                                    .frame(width: itemWidth, height: itemHeight, alignment: .topLeading)
+                                    .background(Color.gray50)
+                                    .clipShape(.rect(cornerRadius: 6))
+                                }
+                            }
+                        }
+                    }
                     
                     Button {
                         self.showingQRCodeSheet.toggle()
