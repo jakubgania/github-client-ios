@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Rate Dashboard</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Michroma&display=swap" rel="stylesheet">
+        <style>
+          <style>
+            html, body {
+               font-family: "Michroma", sans-serif;
+                font-weight: 400;
+                font-style: normal;
+                margin: 0;
+                padding: 0;
+                height: 100%;
+                /* font-family: serif; */
+                /* background-color: #111; */
+                /* color: #0f0; */
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            #data {
+                font-size: 20vw;
+                text-align: center;
+            }
+            .michroma-regular {
+              font-family: "Michroma", sans-serif;
+              font-weight: 400;
+              font-style: normal;
+            }
+
+        </style>
+        </style>
+    </head>
+    <body>
+        <h1>Rate Dashboard</h1>
+        <div id="data" class="michroma-regular"></div>
+        <script>
+            const ws = new WebSocket("ws://192.168.178.30:8000/ws/rate");
+            ws.onmessage = function(event) {
+                // const dataDiv = document.getElementById("data");
+                // dataDiv.innerText = event.data;
+                try {
+                  console.log("RAW data:", event.data);
+                  const json = JSON.parse(event.data);
+                  console.log("Parsed JSON:", json);
+                  const value = json.remaining ?? "Brak pola";
+                  document.getElementById("data").innerText = value;
+              } catch (e) {
+                  document.getElementById("data").innerText = "Błąd danych";
+                  console.error("Błąd parsowania JSON:", e);
+              }
+            };
+        </script>
+    </body>
+</html>

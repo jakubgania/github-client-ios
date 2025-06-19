@@ -1,8 +1,14 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, WebSocket
 from fastapi.responses import JSONResponse
 
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+
+import aiofiles
+import asyncio
 import httpx
 import json
+import os
 
 app = FastAPI()
 
@@ -101,3 +107,108 @@ async def get_pinned_repositories(request: Request):
     print(repos)
 
     return repos
+
+# @app.post("/update-rate")
+# async def update_rate(request: Request):
+#     return {
+#         "success": True
+#     }
+
+# @app.get("/current-rate")
+# async def current_rate():
+#     return {
+#         "data": "1000"
+#     }
+
+def read_rate():
+    data = load_json_data_file("rate.json")
+    return data.get("remaining")
+
+def write_rate(value):
+    with open("rate.json", "w") as f:
+        json.dump({"remaining": value}, f)
+
+async def async_write_rate(value):
+    async with aiofiles.open("rate.json", "w") as f:
+        await f.write(json.dumps({"remaining": value}))
+
+# async def fetch_and_store():
+
+# Monitorowanie zmian w pliku rate.json
+# Handler watchdoga – działa w osobnym wątku
+class RateFileHandler(FileSystemEventHandler):
+    def __init__(self, websocket: WebSocket, loop: asyncio.AbstractEventLoop):
+        self.websocket = websocket
+        self.loop = loop
+
+    def on_modified(self, event):
+        if event.is_directory:
+            return
+        if os.path.basename(event.src_path) == "rate.json":
+            data = load_json_data_file("rate.json")
+            if data:
+                print("🔁 Wysyłam zmienione dane do WebSocketa:", data)
+                coroutine = self.websocket.send_json(data)
+                asyncio.run_coroutine_threadsafe(coroutine, self.loop)
+
+# Endpoint WebSocket
+@app.websocket("/ws/rate")
+async def websocket_rate(websocket: WebSocket):
+    await websocket.accept()
+    print("✅ WebSocket połączony")
+
+    # Wyślij dane początkowe z pliku
+    data = load_json_data_file("rate.json")
+    if data:
+        await websocket.send_json(data)
+
+    # Pobierz aktualną pętlę asyncio (z głównego wątku)
+    loop = asyncio.get_running_loop()
+
+    # Obserwator pliku
+    handler = RateFileHandler(websocket, loop)
+    observer = Observer()
+    observer.schedule(handler, path=".", recursive=False)
+    observer.start()
+
+    try:
+        while True:
+            await asyncio.sleep(1)
+    except Exception as e:
+        print("❌ Błąd WebSocket:", e)
+    finally:
+        print("🛑 Zamykam observer i WebSocket")
+        observer.stop()
+        observer.join()
+
+
+@app.post("/update-rate")
+async def update_rate(request: Request):
+    body = await request.json()
+    print(body)
+    # remaining_header = request.headers
+    # print(remaining_header)
+    remaining = body.get("remaining", 0)
+
+    write_rate(remaining)
+
+    # async with httpx.AsyncClient() as client:
+    #     response = await client.get(
+    #         "https://api.github.com/rate_limit",
+    #         headers={
+    #             "Authorization": f"token token"
+    #         }
+    #     )
+
+    # if response.status_code != 200:
+    #     raise HTTPException(status_code=response.status_code, detail=response.json())
+    
+    # rem = int(response.headers.get("X-RateLimit-Remaining", 0))
+
+    return {
+        "message": "rem"
+    }
+
+# @app.route("/current-rate", methods=["GET"])
+# def current_rate():
+#     return jsonify(rate_data)

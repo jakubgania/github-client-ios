@@ -13,6 +13,8 @@ final class GitHubService {
     private let apiVersion = "2022-11-28"
     private let networkClient = NetworkClient()
     private let keychain = KeychainManager.shared
+    
+    private let localServerURL = "http://192.168.178.30:8000"
 
     private func makeRequest(path: String,
                              method: String = "GET",
@@ -89,29 +91,29 @@ final class GitHubService {
     }
     
     func getFollowers(username: String, page: Int, perPage: Int) async throws -> [Follower] {
-        let request = try makeRequest(path: "/users/\(username)/followers?page=\(page)&per_page=\(perPage)")
+        let request = try makeRequest(path: "/users/\(username)/followers?page=\(page)&per_page=\(perPage)", requiresAuth: true)
         return try await networkClient.fetch(request)
     }
     
     func getStarredRepositories(username: String) async throws -> [StarredItem] {
-        let request = try makeRequest(path: "/users/\(username)/starred")
+        let request = try makeRequest(path: "/users/\(username)/starred", requiresAuth: true)
         return try await networkClient.fetch(request)
     }
     
     func getRepositoryDetailsView(repositoryId: String) async throws -> RepositoryInfo {
         print("repo details")
         print(repositoryId)
-        let request = try makeRequest(path: "/repos/\(repositoryId)")
+        let request = try makeRequest(path: "/repos/\(repositoryId)", requiresAuth: true)
         return try await networkClient.fetch(request)
     }
     
     func getRepositoryIssues(repositoryId: String) async throws -> [Issue] {
-        let request = try makeRequest(path: "/repos/\(repositoryId)/issues")
+        let request = try makeRequest(path: "/repos/\(repositoryId)/issues", requiresAuth: true)
         return try await networkClient.fetch(request)
     }
     
     func getRepositoryIssuesOpen(repositoryId: String) async throws -> [Issue] {
-        let request = try makeRequest(path: "/repos/\(repositoryId)/issues?state=open")
+        let request = try makeRequest(path: "/repos/\(repositoryId)/issues?state=open", requiresAuth: true)
         return try await networkClient.fetch(request)
     }
     
@@ -120,41 +122,15 @@ final class GitHubService {
         if let state = state {
             queryParams = ["state": state.rawValue]
         }
-        let request = try makeRequest(path: "/repos/\(repositoryId)/issues", queryParams: queryParams)
+        let request = try makeRequest(path: "/repos/\(repositoryId)/issues", requiresAuth: true, queryParams: queryParams)
         return try await networkClient.fetch(request)
     }
 
     func getTrendingRepositories() async throws -> [TrendingRepository] {
-        print("get trending repositories")
-        let request = try makeRequest(path: "/trending-repositories", requiresAuth: false, overrideBaseURL: "http://192.168.178.30:8000")
+        let request = try makeRequest(path: "/trending-repositories", requiresAuth: false, overrideBaseURL: localServerURL)
         return try await networkClient.fetch(request)
     }
     
-    func getTrendingRepositories2() async throws -> [TrendingRepository] {
-            // point at your local/trending service
-            let overrideURL = "http://192.168.178.30:8000"
-            // Build the request (no auth needed)
-            var request = try makeRequest(
-                path: "/trending-repositories",
-                requiresAuth: false,
-                overrideBaseURL: overrideURL
-            )
-            // ensure the server knows we want JSON back
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-//        request.setValue("application/json", forHTTPHeaderField: "Accept")
-
-            // optional: log for debugging
-            print("🔍 Sending request to:", request.url?.absoluteString ?? "-")
-
-            // perform the network call and decode
-            let repos: [TrendingRepository] = try await networkClient.fetch(request)
-
-            // optional: log result count
-            print("✅ Fetched \(repos.count) trending repos")
-
-            return repos
-        }
-
 //    func fetchTrendingDevelopers() async throws -> [TrendingDevelopers] {
 //        let request = try makeRequest(path: "/some/custom/devs-endpoint")
 //        return try await networkClient.fetch(request)
@@ -166,7 +142,7 @@ final class GitHubService {
             "username": username
         ]
         let bodyData = try JSONSerialization.data(withJSONObject: payload)
-        var request = try makeRequest(path: "/graphql/pinned-repos", method: "POST", requiresAuth: true, overrideBaseURL: "3")
+        var request = try makeRequest(path: "/graphql/pinned-repos", method: "POST", requiresAuth: true, overrideBaseURL: localServerURL)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = bodyData
         return try await networkClient.fetch(request)

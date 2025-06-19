@@ -121,7 +121,7 @@ struct ContentView: View {
     @State private var isSearchFieldActive = false // detect when search field is activated
     
     @FocusState private var isTextFieldActive: Bool
-    @State private var suggestions = ["vercel", "apple", "microsoft", "google", "tensorflow", "aws", "ibm", "github", "facebookresearch"]
+    @State private var suggestions = ["openai", "vercel", "apple", "microsoft", "google", "tensorflow", "aws", "ibm", "github", "facebookresearch"]
     
     var body: some View {
         NavigationStack {

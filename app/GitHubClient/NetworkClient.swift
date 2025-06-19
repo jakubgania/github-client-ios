@@ -36,13 +36,38 @@ enum NetworkError: Error, LocalizedError {
     }
 }
 
+struct RateLimitInfo: Codable {
+    let remaining: Int
+}
+
 struct NetworkClient {
+    private let analyticsEndpoint: URL? = URL(string: "http://192.168.178.30:8000/update-rate")
+    
     func fetch<T: Decodable>(_ request: URLRequest) async throws -> T {
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
+            var mutableRequest = request
+            mutableRequest.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+            mutableRequest.cachePolicy = .reloadIgnoringLocalCacheData
+            
+            let (data, response) = try await URLSession.shared.data(for: mutableRequest)
+//            let (data, response) = try await URLSession.shared.data(for: request)
 
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw NetworkError.invalidResponse
+            }
+            
+            // Extract rate limit from headers
+            if let rateLimitRemaining = httpResponse.value(forHTTPHeaderField: "x-ratelimit-remaining"),
+               let remaining = Int(rateLimitRemaining),
+               let endpoint = request.url?.absoluteString {
+                let rateLimitInfo = RateLimitInfo(
+                    remaining: remaining
+                )
+                
+                // Send rate limit info to analytics endpoint asynchronously
+                Task.detached(priority: .background) {
+                    try? await self.sendRateLimitAnalytics(rateLimitInfo)
+                }
             }
 
             guard (200...299).contains(httpResponse.statusCode) else {
@@ -63,6 +88,34 @@ struct NetworkClient {
             }
         } catch {
             throw NetworkError.unknown(error)
+        }
+    }
+    
+    private func sendRateLimitAnalytics(_ rateLimitInfo: RateLimitInfo) async throws {
+        guard let analyticsEndpoint = analyticsEndpoint else {
+            return
+        }
+        
+        var request = URLRequest(url: analyticsEndpoint)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let encoder = JSONEncoder()
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+        request.httpBody = try encoder.encode(rateLimitInfo)
+        print(request)
+        
+        let (_, response) = try await URLSession.shared.data(for: request)
+        
+        if let httpResponse = response as? HTTPURLResponse {
+            print("HTTP Status Code: \(httpResponse.statusCode)")
+            
+            guard (200...299).contains(httpResponse.statusCode) else {
+                print("Request failed with status code: \(httpResponse.statusCode)")
+                return
+            }
+        } else {
+            print("Invalid response format")
         }
     }
 }

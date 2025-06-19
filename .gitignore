@@ -13,3 +13,4 @@ backend-service/__pycache__/
 backend-service/developers.json
 backend-service/repositories.json
 backend-service/topics.json
+backend-service/rate.json

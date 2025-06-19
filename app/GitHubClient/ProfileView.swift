@@ -219,7 +219,7 @@ struct ProfileView: View {
                     .listRowSpacing(6)
                     .frame(minHeight: 140)
                     
-                    if !viewModel.pinnedRepositories.isEmpty {
+                    if let pinned = viewModel.fullProfile?.pinnedRepositories, !pinned.isEmpty {
                         Text("Pinned")
                         
                         let screenWidth = UIScreen.main.bounds.width
@@ -227,7 +227,7 @@ struct ProfileView: View {
                         
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 12) {
-                                ForEach(viewModel.fullProfile?.pinnedRepositories) { repository in
+                                ForEach(pinned) { repository in
                                     VStack(alignment: .leading, spacing: 12) {
                                         HStack(alignment: .center, spacing: 6) {
                                             Avatar(
@@ -243,7 +243,7 @@ struct ProfileView: View {
                                         Text(repository.name)
                                         Text(repository.description ?? "")
                                             .font(.callout)
-                                            .lineLimit(6)
+                                            .lineLimit(5)
                                         
                                         Spacer()
                                         

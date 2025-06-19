@@ -87,12 +87,18 @@ final class GitHubViewModel: ObservableObject {
             async let profile = service.getFullProfile(username: username)
             async let socialAccounts = service.getSocialAccounts(username: username)
             async let events = service.getEvents(username: username)
-            async let pinnedRepositoriesList = service.getPinnedRepositories(username: username)
+//            async let pinnedRepositoriesList = service.getPinnedRepositories(username: username)
             
             var fullProfile = try await profile
+            
+            var pinnedRepositories: [PinnedRepository]? = nil
+            if fullProfile.type == "User" {
+                pinnedRepositories = try await service.getPinnedRepositories(username: username)
+            }
+            
             let fetchedSocialAccounts = try await socialAccounts
             let fetchedEvents = try await events
-            let pinnedRepositories = try await pinnedRepositoriesList
+//            let pinnedRepositories = try await pinnedRepositoriesList
             
             fullProfile.socialAccounts = fetchedSocialAccounts
             fullProfile.events = fetchedEvents
@@ -222,14 +228,4 @@ final class GitHubViewModel: ObservableObject {
             self.errorMessage = error.localizedDescription
         }
     }
-    
-//    func fetchPinnedRepositories() async {
-//        async let pinnedRepositoriesList = service.getPinnedRepositories()
-//        
-//        do {
-//            self.pinnedRepositories = try await pinnedRepositoriesList
-//        } catch {
-//            self.errorMessage = error.localizedDescription
-//        }
-//    }
 }
