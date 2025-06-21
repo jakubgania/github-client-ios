@@ -3,27 +3,24 @@
     <head>
         <title>Rate Dashboard</title>
         <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Michroma&display=swap" rel="stylesheet">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Michroma&display=swap" rel="stylesheet">
         <style>
           <style>
             html, body {
-               font-family: "Michroma", sans-serif;
-                font-weight: 400;
-                font-style: normal;
-                margin: 0;
-                padding: 0;
-                height: 100%;
-                /* font-family: serif; */
-                /* background-color: #111; */
-                /* color: #0f0; */
-                display: flex;
-                align-items: center;
-                justify-content: center;
+              /* font-family: "Michroma", sans-serif; */
+              /* font-weight: 400; */
+              /* font-style: normal; */
+              margin: 0;
+              padding: 0;
+              height: 100%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
             }
             #data {
-                font-size: 20vw;
-                text-align: center;
+              font-size: 20vw;
+              text-align: center;
             }
             .michroma-regular {
               font-family: "Michroma", sans-serif;
@@ -46,11 +43,11 @@
                   console.log("RAW data:", event.data);
                   const json = JSON.parse(event.data);
                   console.log("Parsed JSON:", json);
-                  const value = json.remaining ?? "Brak pola";
+                  const value = json.remaining ?? "No field";
                   document.getElementById("data").innerText = value;
               } catch (e) {
-                  document.getElementById("data").innerText = "Błąd danych";
-                  console.error("Błąd parsowania JSON:", e);
+                  document.getElementById("data").innerText = "Data error";
+                  console.error("JSON parsing error:", e);
               }
             };
         </script>
