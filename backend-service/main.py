@@ -45,6 +45,14 @@ def get_topics():
         raise HTTPException(status_code=500, detail="Could not load topics data.")
     return JSONResponse(content=topics_data, status_code=200)
 
+def update_rate_from_response(response: httpx.Response):
+    try:
+        remaining = int(response.headers.get("X-RateLimit-Remaining", 0))
+        print(f"🔄 Aktualizuję rate limit: {remaining}")
+        write_rate(remaining)
+    except Exception as e:
+        print(f"❌ Błąd przy aktualizacji rate limitu: {e}")
+
 @app.post("/graphql/pinned-repos")
 async def get_pinned_repositories(request: Request):
     GITHUB_GRAPHQL_URL = "https://api.github.com/graphql"
@@ -101,6 +109,8 @@ async def get_pinned_repositories(request: Request):
 
     if response.status_code != 200:
         raise HTTPException(status_code=response.status_code, detail=response.json())
+    
+    # update_rate_from_response(response)
     
     data = response.json()
     repos = data["data"]["user"]["pinnedItems"]["nodes"]
@@ -181,6 +191,13 @@ async def websocket_rate(websocket: WebSocket):
         observer.stop()
         observer.join()
 
+def update_rate_from_response(response: httpx.Response):
+    try:
+        remaining = int(response.headers.get("X-RateLimit-Remaining", 0))
+        write_rate(remaining)
+    except Exception as e:
+        print(f"❌ Błąd podczas aktualizacji rate limitu: {e}")
+
 
 @app.post("/update-rate")
 async def update_rate(request: Request):
@@ -212,3 +229,12 @@ async def update_rate(request: Request):
 # @app.route("/current-rate", methods=["GET"])
 # def current_rate():
 #     return jsonify(rate_data)
+
+@app.post("/log-request")
+async def log_request(request: Request):
+    data = await request.json()
+    print("LOG REQUEST")
+    print(data)
+    # with open("requests_log.json", "a") as f:
+    #     f.write(json.dumps(data) + "\n")
+    # return jsonify({"status": "ok"})

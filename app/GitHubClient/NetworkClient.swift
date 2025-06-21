@@ -40,8 +40,16 @@ struct RateLimitInfo: Codable {
     let remaining: Int
 }
 
+struct RequestLog: Codable {
+    let method: String
+    let url: String
+    let headers: [String: String]
+    let timestamp: TimeInterval
+}
+
 struct NetworkClient {
     private let analyticsEndpoint: URL? = URL(string: "http://192.168.178.30:8000/update-rate")
+    private let logEndpoint: URL? = URL(string: "http://192.168.178.30:8000/log-request")
     
     func fetch<T: Decodable>(_ request: URLRequest) async throws -> T {
         do {
@@ -54,6 +62,21 @@ struct NetworkClient {
 
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw NetworkError.invalidResponse
+            }
+            
+            // Log request metadata to Flask
+            if let url = mutableRequest.url?.absoluteString {
+                let headers = mutableRequest.allHTTPHeaderFields ?? [:]
+                let log = RequestLog(
+                    method: mutableRequest.httpMethod ?? "GET",
+                    url: url,
+                    headers: headers,
+                    timestamp: Date().timeIntervalSince1970
+                )
+                
+                Task.detached(priority: .background) {
+                    try? await self.sendRequestLog(log)
+                }
             }
             
             // Extract rate limit from headers
@@ -116,6 +139,25 @@ struct NetworkClient {
             }
         } else {
             print("Invalid response format")
+        }
+    }
+    
+    private func sendRequestLog(_ log: RequestLog) async throws {
+        guard let logEndpoint = logEndpoint else {
+            return
+        }
+
+        var request = URLRequest(url: logEndpoint)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let encoder = JSONEncoder()
+        request.httpBody = try encoder.encode(log)
+
+        let (_, response) = try await URLSession.shared.data(for: request)
+
+        if let httpResponse = response as? HTTPURLResponse {
+            print("Request log status: \(httpResponse.statusCode)")
         }
     }
 }
