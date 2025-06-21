@@ -48,10 +48,10 @@ def get_topics():
 def update_rate_from_response(response: httpx.Response):
     try:
         remaining = int(response.headers.get("X-RateLimit-Remaining", 0))
-        print(f"🔄 Aktualizuję rate limit: {remaining}")
+        print(f"🔄 Rate limit update: {remaining}")
         write_rate(remaining)
     except Exception as e:
-        print(f"❌ Błąd przy aktualizacji rate limitu: {e}")
+        print(f"❌ Error updating rate limit: {e}")
 
 @app.post("/graphql/pinned-repos")
 async def get_pinned_repositories(request: Request):
@@ -157,7 +157,7 @@ class RateFileHandler(FileSystemEventHandler):
         if os.path.basename(event.src_path) == "rate.json":
             data = load_json_data_file("rate.json")
             if data:
-                print("🔁 Wysyłam zmienione dane do WebSocketa:", data)
+                print("🔁 Sending changed data to WebSocket:", data)
                 coroutine = self.websocket.send_json(data)
                 asyncio.run_coroutine_threadsafe(coroutine, self.loop)
 
@@ -165,17 +165,17 @@ class RateFileHandler(FileSystemEventHandler):
 @app.websocket("/ws/rate")
 async def websocket_rate(websocket: WebSocket):
     await websocket.accept()
-    print("✅ WebSocket połączony")
+    print("✅ WebSocket connected")
 
-    # Wyślij dane początkowe z pliku
+    # Send initial data from file
     data = load_json_data_file("rate.json")
     if data:
         await websocket.send_json(data)
 
-    # Pobierz aktualną pętlę asyncio (z głównego wątku)
+    # Get current asyncio loop (from main thread)
     loop = asyncio.get_running_loop()
 
-    # Obserwator pliku
+    # File watcher
     handler = RateFileHandler(websocket, loop)
     observer = Observer()
     observer.schedule(handler, path=".", recursive=False)
@@ -185,9 +185,9 @@ async def websocket_rate(websocket: WebSocket):
         while True:
             await asyncio.sleep(1)
     except Exception as e:
-        print("❌ Błąd WebSocket:", e)
+        print("❌ WebSocket error:", e)
     finally:
-        print("🛑 Zamykam observer i WebSocket")
+        print("🛑 Closing observer and WebSocket")
         observer.stop()
         observer.join()
 
@@ -196,7 +196,7 @@ def update_rate_from_response(response: httpx.Response):
         remaining = int(response.headers.get("X-RateLimit-Remaining", 0))
         write_rate(remaining)
     except Exception as e:
-        print(f"❌ Błąd podczas aktualizacji rate limitu: {e}")
+        print(f"❌ Error while updating rate limit: {e}")
 
 
 @app.post("/update-rate")
