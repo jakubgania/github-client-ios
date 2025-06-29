@@ -1,5 +1,6 @@
 from playwright.sync_api import sync_playwright
 import time
+import pprint
 
 def scrape_marketplace_developers():
   data = []
@@ -14,20 +15,44 @@ def scrape_marketplace_developers():
       time.sleep(2)
 
       elements = page.locator('[class*="marketplace-featured-grid"]')
-      print(elements.count())
+      # print(elements.count())
 
-      count = elements.count()
-      
+      items = page.locator('[class*="marketplace-featured-grid"] > div')
+      count = items.count()
+
       for i in range(count):
-        item = elements.nth(i)
+          item = items.nth(i)
 
-        titles = item.locator("h3 a")
-        title_count = titles.count()
+          # Title
+          title = item.locator("h3 a").inner_text()
 
-        for j in range(title_count):
-            title = titles.nth(j).inner_text()
-            print(f"Title: {title}")
-            data.append(title)
+          # Link (full)
+          href = item.locator("h3 a").get_attribute("href")
+          link = f"https://github.com{href}" if href.startswith("/") else href
+
+          # Provider
+          provider = item.locator("p").nth(0).inner_text().replace("by ", "").strip()
+
+          # Description
+          description = item.locator("p").nth(1).inner_text().strip()
+
+          # Logo (img src)
+          logo = item.locator("img").get_attribute("src")
+          logo_url = f"https://github.com{logo}" if logo.startswith("/") else logo
+
+          model_info = {
+              "title": title,
+              "provider": provider,
+              "description": description,
+              "link": link,
+              "logo": logo_url
+          }
+
+          print(model_info)
+          print("-----")
+          data.append(model_info)
+
+      return data
 
   except Exception as e:
     return []
