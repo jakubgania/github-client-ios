@@ -7,54 +7,123 @@ def scrape_marketplace_developers():
 
   try:
     with sync_playwright() as playwright:
-      browser = playwright.webkit.launch(headless=True)
+      browser = playwright.webkit.launch(headless=False)
 
       page = browser.new_page()
       page.goto("https://github.com/marketplace")
-
-      time.sleep(2)
+      page.wait_for_selector('[class*="marketplace-featured-grid"]')
 
       elements = page.locator('[class*="marketplace-featured-grid"]')
-      # print(elements.count())
+      print(elements.count())
 
-      items = page.locator('[class*="marketplace-featured-grid"] > div')
-      count = items.count()
+      # items = page.locator('[class*="marketplace-featured-grid"] > div')
+      count = elements.count()
 
       for i in range(count):
-          item = items.nth(i)
+          item = elements.nth(i)
 
-          # Title
-          title = item.locator("h3 a").inner_text()
+          items = item.locator('> div')
+          count = items.count()
+          for i in range(count):
+            item = items.nth(i)
 
-          # Link (full)
-          href = item.locator("h3 a").get_attribute("href")
-          link = f"https://github.com{href}" if href.startswith("/") else href
+            # Title
+            title = item.locator("h3 a").inner_text()
+            print(title)
 
-          # Provider
-          provider = item.locator("p").nth(0).inner_text().replace("by ", "").strip()
+            # Link (full)
+            href = item.locator("h3 a").get_attribute("href")
+            link = f"https://github.com{href}" if href.startswith("/") else href
+            print(link)
 
-          # Description
-          description = item.locator("p").nth(1).inner_text().strip()
+            # Logo (img src)
+            logo = item.locator("img").get_attribute("src")
+            logo_url = f"https://github.com{logo}" if logo.startswith("/") else logo
+            print(logo_url)
 
-          # Logo (img src)
-          logo = item.locator("img").get_attribute("src")
-          logo_url = f"https://github.com{logo}" if logo.startswith("/") else logo
+            provider = ""
+            description = ""
 
-          model_info = {
+            ps = item.locator("p")
+            if ps.count() == 1:
+              description = ps.nth(0).inner_text().strip()
+            elif ps.count() >= 2:
+              provider = ps.nth(0).inner_text().replace("by", "").strip()
+              description = ps.nth(1).inner_text().strip()
+
+            data.append({
               "title": title,
               "provider": provider,
               "description": description,
               "link": link,
               "logo": logo_url
-          }
+            })
 
-          print(model_info)
-          print("-----")
-          data.append(model_info)
+            # print(data)
+            # print("-----")
 
-      return data
+          # print(data)
+          # print("-----")
+          # data.append(model_info)
+
+      # items2 = page.locator('[class*="marketplace-featured-grid"] > div[2]')
+      # count2 = items2.count()
+      # print(count2)
+
+      # elements2 = page.locator('[class*="marketplace-list-grid"]')
+      # page.wait_for_selector('[data-testid="marketplace-item"]')
+      elements2 = page.locator('[data-testid="marketplace-item"]')
+      print(elements2.count())
+      count2 = elements2.count()
+
+      for i in range(count2):
+        item = elements2.nth(i)
+        # print(item)
+
+        title = item.locator("h3 a").inner_text()
+        link = item.locator("h3 a").get_attribute("href")
+        full_link = f"https://github.com{link}" if link else ""
+        description = item.locator("p").inner_text()
+        image = item.locator("img").get_attribute("src")
+
+        print({
+            "title": title.strip(),
+            "description": description.strip(),
+            "link": full_link,
+            "thumbnail": image,
+        })
+
+      # page.locator('button:has(span[data-content="Recently added"])').click()
+      page.locator('button span[data-content="Recently added"]').click()
+
+      # time.sleep(2)
+
+      # elements3 = page.locator('[data-testid="marketplace-item"]')
+      elements3 = page.locator('[data-testid="non-featured-item"]')
+      print(elements3.count())
+      count3 = elements3.count()
+
+      for i in range(count3):
+        item = elements3.nth(i)
+        # print(item)
+
+        title = item.locator("h3 a").inner_text()
+        # link = item.locator("h3 a").get_attribute("href")
+        # full_link = f"https://github.com{link}" if link else ""
+        # description = item.locator("p").inner_text()
+        # image = item.locator("img").get_attribute("src")
+
+        print({
+            "title": title.strip(),
+        })
+
+      # return data
 
   except Exception as e:
     return []
   
-scrape_marketplace_developers()
+data = scrape_marketplace_developers()
+
+# for item in data:
+#     print(item)
+#     print("---------")
