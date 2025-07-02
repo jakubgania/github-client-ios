@@ -16,7 +16,6 @@ def scrape_marketplace_developers():
       elements = page.locator('[class*="marketplace-featured-grid"]')
       print(elements.count())
 
-      # items = page.locator('[class*="marketplace-featured-grid"] > div')
       count = elements.count()
 
       for i in range(count):
@@ -59,26 +58,12 @@ def scrape_marketplace_developers():
               "logo": logo_url
             })
 
-            # print(data)
-            # print("-----")
-
-          # print(data)
-          # print("-----")
-          # data.append(model_info)
-
-      # items2 = page.locator('[class*="marketplace-featured-grid"] > div[2]')
-      # count2 = items2.count()
-      # print(count2)
-
-      # elements2 = page.locator('[class*="marketplace-list-grid"]')
-      # page.wait_for_selector('[data-testid="marketplace-item"]')
       elements2 = page.locator('[data-testid="marketplace-item"]')
       print(elements2.count())
       count2 = elements2.count()
 
       for i in range(count2):
         item = elements2.nth(i)
-        # print(item)
 
         title = item.locator("h3 a").inner_text()
         link = item.locator("h3 a").get_attribute("href")
@@ -93,12 +78,8 @@ def scrape_marketplace_developers():
             "thumbnail": image,
         })
 
-      # page.locator('button:has(span[data-content="Recently added"])').click()
       page.locator('button span[data-content="Recently added"]').click()
 
-      # time.sleep(2)
-
-      # elements3 = page.locator('[data-testid="marketplace-item"]')
       elements3 = page.locator('[data-testid="non-featured-item"]')
       print(elements3.count())
       count3 = elements3.count()
