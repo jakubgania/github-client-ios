@@ -7,7 +7,7 @@ def scrape_marketplace_developers():
 
   try:
     with sync_playwright() as playwright:
-      browser = playwright.webkit.launch(headless=False)
+      browser = playwright.webkit.launch(headless=True)
 
       page = browser.new_page()
       page.goto("https://github.com/marketplace")
