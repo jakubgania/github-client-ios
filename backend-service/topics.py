@@ -8,16 +8,16 @@ async def scrape_topics():
 
     try:
         async with async_playwright() as playwright:
-            browser = await playwright.webkit.launch()
+            browser = await playwright.webkit.launch(headless=False)
 
             page = await browser.new_page()
             await page.goto("https://github.com/topics")
             # content = await page.content()
             # print("content", content)
 
-            for i in range(2):
-                await page.locator("xpath=//form/button").click()
-                await asyncio.sleep(2)
+            # for i in range(2):
+            #     await page.locator("xpath=//form/button").click()
+            #     await asyncio.sleep(2)
 
             topics_list = await page.locator(".py-4.border-bottom.d-flex.flex-justify-between").all()
 
