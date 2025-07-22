@@ -87,6 +87,49 @@ def format_duration(seconds):
     else:
         hours = seconds / 3600
         return f"{hours:.2f} hours"
+    
+QUERY = """
+query($username: String) {
+    user(login: $username) {
+        login
+        name
+        followers(first: 100) {
+            pageInfo {
+                hasNextPage
+                endCursor
+            }
+            nodes {
+                name
+                login
+                followers {
+                    totalCount
+                }
+                following {
+                    totalCount
+                }
+            }
+            totalCount
+        }
+        following(first: 100) {
+            pageInfo {
+                hasNextPage
+                endCurosr
+            }
+            nodes {
+                name
+                login
+                followers {
+                    totalCount
+                }
+                following {
+                    totalCount
+                }
+            }
+            totalCount
+        }
+    }
+}
+"""
 
 def worker():
     start_time = time.time()
@@ -103,6 +146,8 @@ def worker():
     # 1 check redis 
     # 2 check file
     # start main loops
+
+
 
     end_time = time.time()
     duration = end_time - start_time
