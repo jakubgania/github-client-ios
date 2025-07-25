@@ -4,11 +4,15 @@ import socket
 import time
 import os
 
+from pprint import pprint
+
 GITHUB_RATE_LIMIT_ENDPOINT = "https://api.github.com/rate_limit"
+GITHUB_API_ENDPOINT = "https://api.github.com/graphql"
 GITHUB_API_TOKEN=os.environ.get("GITHUB_API_TOKEN")
 HEADERS = {
     "Authorization": f"Bearer {GITHUB_API_TOKEN}"
 }
+PAGINATION_LOOP_TIME_SLEEP = 1.8
 
 def get_rate_limit():
     response = requests.get(GITHUB_RATE_LIMIT_ENDPOINT, headers=HEADERS)
@@ -89,10 +93,16 @@ def format_duration(seconds):
         return f"{hours:.2f} hours"
     
 QUERY = """
-query($username: String) {
+query($username: String!) {
     user(login: $username) {
         login
         name
+        organizations(first: 100) {
+            nodes {
+                name
+                login
+            }
+        }
         followers(first: 100) {
             pageInfo {
                 hasNextPage
@@ -113,7 +123,7 @@ query($username: String) {
         following(first: 100) {
             pageInfo {
                 hasNextPage
-                endCurosr
+                endCursor
             }
             nodes {
                 name
@@ -131,6 +141,57 @@ query($username: String) {
 }
 """
 
+PAGINATION_QUERY_FOLLOWERS = """
+query($username: String!, $cursor: String!) {
+    user(login: $username) {
+        followers(first: 100, after: $cursor) {
+            pageInfo {
+                hasNextPage
+                endCursor
+            }
+            nodes {
+                name
+                login
+                followers {
+                    totalCount
+                }
+                following {
+                    totalCount
+                }
+            }
+            totalCount
+        }
+    }
+}
+"""
+
+def fetch_api_data(query, variables, headers):
+    try:
+        response = requests.post(
+            GITHUB_API_ENDPOINT,
+            json={
+                'query': query,
+                'variables': variables
+            },
+            headers=headers
+        )
+
+        response.raise_for_status()
+
+        data = response.json()
+        if 'errors' in data:
+            print(" ")
+            print("GraphQL query error")
+            print(data["errors"][0]["message"])
+            print(" ")
+
+            return []
+        
+        return response
+    except requests.exceptions.HTTPError as http_error:
+        print(f"HTTP error occurred: {http_error}")
+        return []
+
 def worker():
     start_time = time.time()
 
@@ -147,6 +208,121 @@ def worker():
     # 2 check file
     # start main loops
 
+    variables = {
+        "username": "yyx990803"
+    }
+
+    response = fetch_api_data(QUERY, variables, HEADERS)
+    data = []
+
+    if response:
+        data = response.json()
+
+    pprint(data)
+
+    if data and data["data"]["user"] is not None:
+        print("data exists")
+
+        organizations = data["data"]["user"]["organizations"]
+        if organizations and organizations["nodes"]:
+            if organizations["nodes"]:
+                for item in organizations["nodes"]:
+                    print("organization", item["login"])
+                else:
+                    print("organizations node - empty")
+
+        followers = data["data"]["user"]["followers"]
+        if followers:
+            hasNextPage = False
+            endCursor = ""
+
+            if followers["nodes"]:
+                for node in followers["nodes"]:
+                    node_login = node["login"]
+                    node_followers_total_count = node["followers"]["totalCount"]
+                    node_following_total_count = node["following"]["totalCount"]
+
+                    print(
+                        "followers",
+                        " - ",
+                        node_login,
+                        " - ",
+                        node_followers_total_count,
+                        " - ",
+                        node_following_total_count
+                    )
+            else:
+                print("followers nodes - empty")
+
+            if followers["pageInfo"] and followers["pageInfo"]["hasNextPage"]:
+                print("pagination")
+                has_next_page = followers["pageInfo"]["hasNextPage"]
+                cursor = followers["pageInfo"]["endCursor"]
+                followersPaginationCounter = 0
+
+                while has_next_page:
+                    if 6 <= followersPaginationCounter:
+                        break
+
+                    check_rate_limit()
+
+                    variables_query_followers = {
+                        "username": "yyx990803",
+                        "cursor": cursor
+                    }
+
+                    response = requests.post(
+                        GITHUB_API_ENDPOINT,
+                        json = {
+                            'query': PAGINATION_QUERY_FOLLOWERS,
+                            "variables": variables_query_followers
+                        },
+                        headers = HEADERS
+                    )
+                    data_p = response.json()
+
+                    nodes = data_p["data"]["user"]["followers"]["nodes"]
+                    for node in nodes:
+                        node_login = node["login"]
+                        node_followers_total_count = node["followers"]["totalCount"]
+                        node_following_total_count = node["following"]["totalCount"]
+
+                        print(
+                            "pagination followers",
+                            " - ",
+                            node_login,
+                            " - ",
+                            node_followers_total_count,
+                            " - ",
+                            node_following_total_count
+                        )
+
+                        if node_followers_total_count > 0 or node_following_total_count > 0:
+                            # add to queue -> node["login"]
+                            print("add to queue", node["login"])
+                    
+                    has_next_page = data_p["data"]["user"]["followers"]["pageInfo"]["hasNextPage"]
+                    cursor = data_p["data"]["user"]["followers"]["pageInfo"]["endCursor"]
+                    followersPaginationCounter = followersPaginationCounter + 1
+
+                    time.sleep(PAGINATION_LOOP_TIME_SLEEP)
+        following = data["data"]["user"]["following"]
+        if following:
+            if following["nodes"]:
+                for node in following["nodes"]:
+                    node_login = node["login"]
+                    node_followers_total_count = node["followers"]["totalCount"]
+                    node_following_total_count = node["following"]["totalCount"]
+
+                    print(
+                        "following",
+                        " - ",
+                        node["login"],
+                        " - ",
+                        node_followers_total_count,
+                        " - ",
+                        node_following_total_count
+                    )
 
 
     end_time = time.time()
