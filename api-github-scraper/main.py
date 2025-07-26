@@ -2,6 +2,7 @@ from datetime import datetime
 import requests
 import socket
 import time
+import sys
 import os
 
 from pprint import pprint
@@ -13,6 +14,32 @@ HEADERS = {
     "Authorization": f"Bearer {GITHUB_API_TOKEN}"
 }
 PAGINATION_LOOP_TIME_SLEEP = 1.8
+
+def validate_github_token():
+    if not GITHUB_API_TOKEN:
+        print("❌ Error: GITHUB_API_TOKEN variable not set.")
+        print("Set it e.g. `export GITHUB_API_TOKEN=your_token` and try again.")
+        sys.exit(1)
+
+    try:
+        response = requests.get(GITHUB_RATE_LIMIT_ENDPOINT, headers=HEADERS, timeout=5)
+    except requests.RequestException as error:
+        print(f"❌ Failed to connect to GitHub API: {error}")
+        sys.exit(1)
+
+    if response.status_code == 401:
+        print("❌ Invalid or expired GitHub token.")
+        print("Check if the TOKEN is up to date and has the appropriate scopes.")
+        sys.exit(1)
+    elif response.status_code >= 400:
+        print(f"❌ GitHub API returned an error {response.status_code}:")
+        print(response.json().get("message", response.text))
+        sys.exit(1)
+
+    data = response.json()
+    rem = data["resources"]["graphql"]["remaining"]
+    reset = data["resources"]["graphql"]["reset"]
+    print(f"✅ Token OK - left {rem} queries, reset about {reset} (unix time).")
 
 def get_rate_limit():
     response = requests.get(GITHUB_RATE_LIMIT_ENDPOINT, headers=HEADERS)
@@ -330,6 +357,7 @@ def worker():
 
 
 def main():
+    validate_github_token()
     worker()
 
 if __name__ == "__main__":
