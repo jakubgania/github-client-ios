@@ -206,7 +206,6 @@ def worker():
     # get login to init script
     # 1 check redis 
     # 2 check file
-    # start main loops
 
     variables = {
         "username": "yyx990803"
