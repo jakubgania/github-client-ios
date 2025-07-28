@@ -1,6 +1,7 @@
 from datetime import datetime
 import requests
 import socket
+import redis
 import time
 import sys
 import os
@@ -14,6 +15,31 @@ HEADERS = {
     "Authorization": f"Bearer {GITHUB_API_TOKEN}"
 }
 PAGINATION_LOOP_TIME_SLEEP = 1.8
+QUEUE_NAME = "github_logins_queue"
+
+config = {
+    "mainLoop": {
+        "limitNumberOfLoops": True,
+        "limitCounter": 12
+    },
+    "followersPaginationLoops": {
+        "limitNumberOfLoops": True,
+        "limitCounter": 4
+    },
+    "followingPaginationLoops": {
+        "limitNumberOfLoops": True,
+        "limitCounter": 4
+    }
+}
+
+redis_client = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+
+def enqueue_logins(logins: list[str]):
+    """Dodaje wiele loginów do kolejki Redis w jednej operacji."""
+    if not logins:
+        return
+    redis_client.rpush(QUEUE_NAME, *logins)  # * rozpakowuje listę jako argumenty
+    print(f"➡️ Added {len(logins)} logins to Redis queue.")
 
 def validate_github_token():
     if not GITHUB_API_TOKEN:
@@ -192,6 +218,30 @@ query($username: String!, $cursor: String!) {
 }
 """
 
+PAGINATION_QUERY_FOLLOWING = """
+query($username: String!, $cursor: String!) {
+    user(login: $username) {
+        following(first: 100, after: $cursor) {
+            pageInfo {
+                hasNextPage
+                endCursor
+            }
+            nodes {
+                name
+                login
+                followers {
+                    totalCount
+                }
+                following {
+                    totalCount
+                }
+            }
+            totalCount
+        }
+    }
+}
+"""
+
 def fetch_api_data(query, variables, headers):
     try:
         response = requests.post(
@@ -225,7 +275,7 @@ def worker():
     print("✅ start worker")
     print("token: ", GITHUB_API_TOKEN)
 
-    check_rate_limit()
+    # check_rate_limit()
     print("🚀 so let's move on!")
 
     check_services_running()
@@ -234,87 +284,52 @@ def worker():
     # 1 check redis 
     # 2 check file
 
-    variables = {
-        "username": "yyx990803"
-    }
+    main_loop_counter = 0
 
-    response = fetch_api_data(QUERY, variables, HEADERS)
-    data = []
+    while True:
+        if config["mainLoop"]["limitNumberOfLoops"] and config["mainLoop"]["limitCounter"] <= main_loop_counter:
+            break
 
-    if response:
-        data = response.json()
+        check_rate_limit()
 
-    pprint(data)
+        username = "yyx990803"
 
-    if data and data["data"]["user"] is not None:
-        print("data exists")
+        variables = {
+            "username": username
+        }
 
-        organizations = data["data"]["user"]["organizations"]
-        if organizations and organizations["nodes"]:
-            if organizations["nodes"]:
-                for item in organizations["nodes"]:
-                    print("organization", item["login"])
-                else:
-                    print("organizations node - empty")
+        response = fetch_api_data(QUERY, variables, HEADERS)
+        data = []
 
-        followers = data["data"]["user"]["followers"]
-        if followers:
-            hasNextPage = False
-            endCursor = ""
+        if response:
+            data = response.json()
 
-            if followers["nodes"]:
-                for node in followers["nodes"]:
-                    node_login = node["login"]
-                    node_followers_total_count = node["followers"]["totalCount"]
-                    node_following_total_count = node["following"]["totalCount"]
+        pprint(data)
 
-                    print(
-                        "followers",
-                        " - ",
-                        node_login,
-                        " - ",
-                        node_followers_total_count,
-                        " - ",
-                        node_following_total_count
-                    )
-            else:
-                print("followers nodes - empty")
+        if data and data["data"]["user"] is not None:
+            print("data exists")
 
-            if followers["pageInfo"] and followers["pageInfo"]["hasNextPage"]:
-                print("pagination")
-                has_next_page = followers["pageInfo"]["hasNextPage"]
-                cursor = followers["pageInfo"]["endCursor"]
-                followersPaginationCounter = 0
+            organizations = data["data"]["user"]["organizations"]
+            if organizations and organizations["nodes"]:
+                if organizations["nodes"]:
+                    for item in organizations["nodes"]:
+                        print("organization", item["login"])
+                    else:
+                        print("organizations node - empty")
 
-                while has_next_page:
-                    if 6 <= followersPaginationCounter:
-                        break
+            followers = data["data"]["user"]["followers"]
+            if followers:
+                hasNextPage = False
+                endCursor = ""
 
-                    check_rate_limit()
-
-                    variables_query_followers = {
-                        "username": "yyx990803",
-                        "cursor": cursor
-                    }
-
-                    response = requests.post(
-                        GITHUB_API_ENDPOINT,
-                        json = {
-                            'query': PAGINATION_QUERY_FOLLOWERS,
-                            "variables": variables_query_followers
-                        },
-                        headers = HEADERS
-                    )
-                    data_p = response.json()
-
-                    nodes = data_p["data"]["user"]["followers"]["nodes"]
-                    for node in nodes:
+                if followers["nodes"]:
+                    for node in followers["nodes"]:
                         node_login = node["login"]
                         node_followers_total_count = node["followers"]["totalCount"]
                         node_following_total_count = node["following"]["totalCount"]
 
                         print(
-                            "pagination followers",
+                            "followers",
                             " - ",
                             node_login,
                             " - ",
@@ -322,34 +337,146 @@ def worker():
                             " - ",
                             node_following_total_count
                         )
+                else:
+                    print("followers nodes - empty")
 
-                        if node_followers_total_count > 0 or node_following_total_count > 0:
-                            # add to queue -> node["login"]
-                            print("add to queue", node["login"])
-                    
-                    has_next_page = data_p["data"]["user"]["followers"]["pageInfo"]["hasNextPage"]
-                    cursor = data_p["data"]["user"]["followers"]["pageInfo"]["endCursor"]
-                    followersPaginationCounter = followersPaginationCounter + 1
+                if followers["pageInfo"] and followers["pageInfo"]["hasNextPage"]:
+                    print("pagination")
+                    has_next_page = followers["pageInfo"]["hasNextPage"]
+                    cursor = followers["pageInfo"]["endCursor"]
+                    followersPaginationCounter = 0
 
-                    time.sleep(PAGINATION_LOOP_TIME_SLEEP)
-        following = data["data"]["user"]["following"]
-        if following:
-            if following["nodes"]:
-                for node in following["nodes"]:
-                    node_login = node["login"]
-                    node_followers_total_count = node["followers"]["totalCount"]
-                    node_following_total_count = node["following"]["totalCount"]
+                    while has_next_page:
+                        if config["followersPaginationLoops"]["limitNumberOfLoops"] and config["followersPaginationLoops"]["limitCounter"] <= followersPaginationCounter:
+                            break
 
-                    print(
-                        "following",
-                        " - ",
-                        node["login"],
-                        " - ",
-                        node_followers_total_count,
-                        " - ",
-                        node_following_total_count
-                    )
+                        check_rate_limit()
 
+                        variables_query_followers = {
+                            "username": username,
+                            "cursor": cursor
+                        }
+
+                        response = requests.post(
+                            GITHUB_API_ENDPOINT,
+                            json = {
+                                'query': PAGINATION_QUERY_FOLLOWERS,
+                                "variables": variables_query_followers
+                            },
+                            headers = HEADERS
+                        )
+                        data_p = response.json()
+
+                        batch_logins = []
+                        nodes = data_p["data"]["user"]["followers"]["nodes"]
+                        for node in nodes:
+                            node_login = node["login"]
+                            node_followers_total_count = node["followers"]["totalCount"]
+                            node_following_total_count = node["following"]["totalCount"]
+
+                            print(
+                                "pagination followers",
+                                " - ",
+                                node_login,
+                                " - ",
+                                node_followers_total_count,
+                                " - ",
+                                node_following_total_count
+                            )
+
+                            if node_followers_total_count > 0 or node_following_total_count > 0:
+                                # add to queue -> node["login"]
+                                print("add to queue", node["login"])
+                                batch_logins.append(node_login)
+                        
+                        enqueue_logins(batch_logins)
+                        
+                        has_next_page = data_p["data"]["user"]["followers"]["pageInfo"]["hasNextPage"]
+                        cursor = data_p["data"]["user"]["followers"]["pageInfo"]["endCursor"]
+                        followersPaginationCounter = followersPaginationCounter + 1
+
+                        time.sleep(PAGINATION_LOOP_TIME_SLEEP)
+
+            following = data["data"]["user"]["following"]
+            if following:
+                if following["nodes"]:
+                    for node in following["nodes"]:
+                        node_login = node["login"]
+                        node_followers_total_count = node["followers"]["totalCount"]
+                        node_following_total_count = node["following"]["totalCount"]
+
+                        print(
+                            "following",
+                            " - ",
+                            node["login"],
+                            " - ",
+                            node_followers_total_count,
+                            " - ",
+                            node_following_total_count
+                        )
+                else:
+                    print("following nodes - empty")
+
+                if following["pageInfo"] and following["pageInfo"]["hasNextPage"]:
+                    has_next_page = following["pageInfo"]["hasNextPage"]
+                    cursor = following["pageInfo"]["endCursor"]
+                    followingPaginationCounter = 0
+
+                    while has_next_page:
+                        if config["followingsPaginationLoops"]["limitNumberOfLoops"] and config["followingsPaginationLoops"]["limitCounter"] <= followingPaginationCounter:
+                            break
+
+                        check_rate_limit()
+
+                        variables_query_following = {
+                            "username": username,
+                            "cursor": cursor
+                        }
+
+                        response = requests.post(
+                            GITHUB_API_ENDPOINT,
+                            json = {
+                                'query': PAGINATION_QUERY_FOLLOWING,
+                                "variables": variables_query_following
+                            },
+                            headers = HEADERS
+                        )
+                        data_p = response.json()
+
+                        batch_logins = []
+                        nodes = data_p["data"]["user"]["following"]["nodes"]
+                        for node in nodes:
+                            node_login = node["login"]
+                            node_followers_total_count = node["followers"]["totalCount"]
+                            node_following_total_count = node["following"]["totalCount"]
+
+                            print(
+                                "following",
+                                " - ",
+                                node["login"],
+                                " - ",
+                                node_followers_total_count,
+                                " - ",
+                                node_following_total_count
+                            )
+
+                            if node_followers_total_count > 0 or node_following_total_count > 0:
+                                # add to queue -> node["login"]
+                                print("add to queue", node["login"])
+                                batch_logins.append(node_login)
+
+                        enqueue_logins(batch_logins)
+
+                        has_next_page = data_p["data"]["user"]["following"]["pageInfo"]["hasNextPage"]
+                        cursor = data_p["data"]["user"]["following"]["pageInfo"]["endCursor"]
+
+                        followingPaginationCounter = followingPaginationCounter + 1
+
+                        time.sleep(PAGINATION_LOOP_TIME_SLEEP)
+                else:
+                    print("following nextPage - no pagination")
+
+        main_loop_counter = main_loop_counter + 1
 
     end_time = time.time()
     duration = end_time - start_time
