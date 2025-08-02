@@ -20,15 +20,15 @@ QUEUE_NAME = "github_logins_queue"
 config = {
     "mainLoop": {
         "limitNumberOfLoops": True,
-        "limitCounter": 12
+        "limitCounter": 1
     },
     "followersPaginationLoops": {
         "limitNumberOfLoops": True,
-        "limitCounter": 4
+        "limitCounter": 1
     },
     "followingPaginationLoops": {
         "limitNumberOfLoops": True,
-        "limitCounter": 4
+        "limitCounter": 1
     }
 }
 
@@ -488,4 +488,5 @@ def main():
     worker()
 
 if __name__ == "__main__":
-    main()
+    # main()
+    check_rate_limit()
