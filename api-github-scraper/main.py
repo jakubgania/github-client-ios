@@ -1,5 +1,6 @@
 from datetime import datetime
 import requests
+import psycopg
 import socket
 import redis
 import time
@@ -7,6 +8,8 @@ import sys
 import os
 
 from pprint import pprint
+
+POSTGRES_DSN = os.getenv("POSTGRES_DSN", "postgresql://postgres:postgres@localhost:5432/postgres")
 
 GITHUB_RATE_LIMIT_ENDPOINT = "https://api.github.com/rate_limit"
 GITHUB_API_ENDPOINT = "https://api.github.com/graphql"
@@ -16,18 +19,19 @@ HEADERS = {
 }
 PAGINATION_LOOP_TIME_SLEEP = 1.8
 QUEUE_NAME = "github_logins_queue"
+INITIAL_PROFILE_LOGIN = "jakubgania"
 
 config = {
     "mainLoop": {
         "limitNumberOfLoops": True,
-        "limitCounter": 1
+        "limitCounter": 8
     },
     "followersPaginationLoops": {
-        "limitNumberOfLoops": True,
+        "limitNumberOfLoops": False,
         "limitCounter": 1
     },
-    "followingPaginationLoops": {
-        "limitNumberOfLoops": True,
+    "followingsPaginationLoops": {
+        "limitNumberOfLoops": False,
         "limitCounter": 1
     }
 }
@@ -268,6 +272,26 @@ def fetch_api_data(query, variables, headers):
     except requests.exceptions.HTTPError as http_error:
         print(f"HTTP error occurred: {http_error}")
         return []
+    
+def get_pending_user_login():
+    """get pending user"""
+    with psycopg.connect(POSTGRES_DSN) as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT login
+                FROM users
+                WHERE status = 'pending'
+                ORDER BY created_at ASC
+                LIMIT 1;
+            """)
+            row = cur.fetchone()
+            return row[0] if row else None
+        
+def mark_user_done(login: str):
+    with psycopg.connect(POSTGRES_DSN) as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE users SET status = 'done' WHERE login = %s;", (login,))
+            conn.commit()
 
 def worker():
     start_time = time.time()
@@ -292,7 +316,21 @@ def worker():
 
         check_rate_limit()
 
-        username = "yyx990803"
+         # 1. Pobierz usera pending z bazy
+        username = get_pending_user_login()
+
+        # 2. Jeśli nie ma userów pending w bazie → użyj INITIAL_PROFILE_LOGIN (pierwszy raz)
+        if not username and main_loop_counter == 0:
+            username = INITIAL_PROFILE_LOGIN
+            print(f"⚠️ Brak pending users w bazie - używam INITIAL_PROFILE_LOGIN: {username}")
+        elif not username:
+            print("⏳ Brak użytkowników pending - czekam na dane...")
+            time.sleep(5)
+            continue
+
+        print(" ")
+        print(f"➡️ Processing user: {username}")
+        print(" ")
 
         variables = {
             "username": username
@@ -477,6 +515,7 @@ def worker():
                     print("following nextPage - no pagination")
 
         main_loop_counter = main_loop_counter + 1
+        mark_user_done(username)
 
     end_time = time.time()
     duration = end_time - start_time
@@ -488,5 +527,5 @@ def main():
     worker()
 
 if __name__ == "__main__":
-    # main()
-    check_rate_limit()
+    main()
+    # check_rate_limit()

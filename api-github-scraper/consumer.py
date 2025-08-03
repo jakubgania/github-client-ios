@@ -49,6 +49,54 @@ def wait_for_postgres():
             print(f"⏳ Waiting for Postgres... ({e})")
             time.sleep(2)
 
+def init_db():
+    """init db"""
+    with psycopg.connect(POSTGRES_DSN) as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                login TEXT PRIMARY KEY,
+                name TEXT,
+                bio TEXT,
+                company TEXT,
+                location TEXT,
+                created_at TIMESTAMP,
+                followers_count INT,
+                following_count INT,
+                status TEXT DEFAULT 'pending'
+            );
+            """)
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_users_company ON users (company);")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_users_location ON users (location);")
+            conn.commit()
+
+def user_exists(login: str) -> bool:
+    """check usr"""
+    with psycopg.connect(POSTGRES_DSN) as coon:
+        with coon.cursor() as cur:
+            cur.execute("SELECT 1 FROM users WHERE login = %s LIMIT 1;", (login,))
+            return cur.fetchone() is not None
+        
+def save_user(user_data: dict):
+    """save usr to db"""
+    with psycopg.connect(POSTGRES_DSN) as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO users (login, name, bio, company, location, created_at, followers_count, following_count, status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'pending')
+                ON CONFLICT (login) DO NOTHING;
+            """, (
+                user_data["login"],
+                user_data["name"],
+                user_data["bio"],
+                user_data["company"],
+                user_data["location"],
+                user_data["createdAt"],
+                user_data["followers"]["totalCount"],
+                user_data["following"]["totalCount"]
+            ))
+            conn.commit()
+
 def fetch_github_user(username: str):
     variables = {"username": username}
 
@@ -78,6 +126,9 @@ def fetch_github_user(username: str):
 def consumer():
     print("✅ Starting GitHub consumer...")
 
+    wait_for_postgres()
+    init_db()
+
     redis_client = get_redis_connection()
 
     while True:
@@ -86,6 +137,23 @@ def consumer():
 
         # print(f"➡️ Got login from Redis: {username}")
         print(f"[{datetime.now().strftime('%H:%M:%S')}] ➡️ Got login from Redis: {username}")
+        
+        
+         # 1. Sprawdź czy user jest w bazie
+        if user_exists(username):
+            print(f"↩️ User {username} already in DB, skipping...")
+            continue
+
+        # 2. Pobierz dane z GitHuba
+        user_data = fetch_github_user(username)
+        if not user_data:
+            print(f"⚠️ No data for user {username}")
+            continue
+
+        # 3. Zapisz do bazy
+        save_user(user_data)
+        print(f"💾 Saved {username} to DB")
+        
         time.sleep(0.5)
 
 if __name__ == "__main__":
