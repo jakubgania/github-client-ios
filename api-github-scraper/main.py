@@ -316,15 +316,15 @@ def worker():
 
         check_rate_limit()
 
-         # 1. Pobierz usera pending z bazy
+        # 1. Get the pending user from the database
         username = get_pending_user_login()
 
-        # 2. Jeśli nie ma userów pending w bazie → użyj INITIAL_PROFILE_LOGIN (pierwszy raz)
+        # 2. If there are no users pending in the database → use INITIAL_PROFILE_LOGIN (first time)
         if not username and main_loop_counter == 0:
             username = INITIAL_PROFILE_LOGIN
-            print(f"⚠️ Brak pending users w bazie - używam INITIAL_PROFILE_LOGIN: {username}")
+            print(f"⚠️ No pending users in the database - I use INITIAL_PROFILE_LOGIN: {username}")
         elif not username:
-            print("⏳ Brak użytkowników pending - czekam na dane...")
+            print("⏳ No users pending - waiting for data...")
             time.sleep(5)
             continue
 
