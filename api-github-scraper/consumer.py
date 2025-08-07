@@ -69,7 +69,7 @@ def init_db():
             cur.execute("CREATE INDEX IF NOT EXISTS idx_users_company ON users (company);")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_users_location ON users (location);")
 
-            # Tabela scraper_progress
+            # Table scraper_progress
             cur.execute("""
             CREATE TABLE IF NOT EXISTS scraper_progress (
                 id SERIAL PRIMARY KEY,
@@ -80,7 +80,7 @@ def init_db():
             );
             """)
 
-            # Upewnij się, że istnieje rekord startowy z id=1
+            # Make sure there is a start record with id=1
             cur.execute("""
             INSERT INTO scraper_progress (id, current_login, current_mode, current_cursor)
             VALUES (1, NULL, NULL, NULL)
@@ -158,18 +158,18 @@ def consumer():
         print(f"[{datetime.now().strftime('%H:%M:%S')}] ➡️ Got login from Redis: {username}")
         
         
-         # 1. Sprawdź czy user jest w bazie
+         # 1. Check if the user is in the database
         if user_exists(username):
             print(f"↩️ User {username} already in DB, skipping...")
             continue
 
-        # 2. Pobierz dane z GitHuba
+        # 2. Fetch data from GitHub
         user_data = fetch_github_user(username)
         if not user_data:
             print(f"⚠️ No data for user {username}")
             continue
 
-        # 3. Zapisz do bazy
+        # 3. Save to database
         save_user(user_data)
         print(f"💾 Saved {username} to DB")
         
