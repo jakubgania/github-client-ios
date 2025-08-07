@@ -24,7 +24,7 @@ INITIAL_PROFILE_LOGIN = "jakubgania"
 config = {
     "mainLoop": {
         "limitNumberOfLoops": True,
-        "limitCounter": 8
+        "limitCounter": 3
     },
     "followersPaginationLoops": {
         "limitNumberOfLoops": False,
@@ -293,6 +293,35 @@ def mark_user_done(login: str):
             cur.execute("UPDATE users SET status = 'done' WHERE login = %s;", (login,))
             conn.commit()
 
+def save_progress(login, mode, cursor):
+    """Zapisuje postęp w tabeli scraper_progress (nadpisuje rekord o id=1)."""
+    with psycopg.connect(POSTGRES_DSN) as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO scraper_progress (id, current_login, current_mode, current_cursor, last_update)
+                VALUES (1, %s, %s, %s, now())
+                ON CONFLICT (id) DO UPDATE
+                SET current_login = EXCLUDED.current_login,
+                    current_mode = EXCLUDED.current_mode,
+                    current_cursor = EXCLUDED.current_cursor,
+                    last_update = now();
+            """, (login, mode, cursor))
+            conn.commit()
+
+def load_progress():
+    """Ładuje ostatni zapisany postęp (jeśli istnieje)."""
+    with psycopg.connect(POSTGRES_DSN) as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT current_login, current_mode, current_cursor
+                FROM scraper_progress
+                WHERE id = 1;
+            """)
+            row = cur.fetchone()
+            if row and row[0]:
+                return row  # (login, mode, cursor)
+            return None
+
 def worker():
     start_time = time.time()
 
@@ -382,6 +411,7 @@ def worker():
                     print("pagination")
                     has_next_page = followers["pageInfo"]["hasNextPage"]
                     cursor = followers["pageInfo"]["endCursor"]
+                    save_progress(username, 'followers', cursor)
                     followersPaginationCounter = 0
 
                     while has_next_page:
@@ -458,6 +488,7 @@ def worker():
                 if following["pageInfo"] and following["pageInfo"]["hasNextPage"]:
                     has_next_page = following["pageInfo"]["hasNextPage"]
                     cursor = following["pageInfo"]["endCursor"]
+                    save_progress(username, 'following', cursor)
                     followingPaginationCounter = 0
 
                     while has_next_page:
@@ -516,6 +547,7 @@ def worker():
 
         main_loop_counter = main_loop_counter + 1
         mark_user_done(username)
+        save_progress(None, None, None)
 
     end_time = time.time()
     duration = end_time - start_time

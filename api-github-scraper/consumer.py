@@ -68,6 +68,25 @@ def init_db():
             """)
             cur.execute("CREATE INDEX IF NOT EXISTS idx_users_company ON users (company);")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_users_location ON users (location);")
+
+            # Tabela scraper_progress
+            cur.execute("""
+            CREATE TABLE IF NOT EXISTS scraper_progress (
+                id SERIAL PRIMARY KEY,
+                current_login TEXT,
+                current_mode TEXT,        -- 'followers' albo 'following'
+                current_cursor TEXT,
+                last_update TIMESTAMP DEFAULT now()
+            );
+            """)
+
+            # Upewnij się, że istnieje rekord startowy z id=1
+            cur.execute("""
+            INSERT INTO scraper_progress (id, current_login, current_mode, current_cursor)
+            VALUES (1, NULL, NULL, NULL)
+            ON CONFLICT (id) DO NOTHING;
+            """)
+
             conn.commit()
 
 def user_exists(login: str) -> bool:
