@@ -21,6 +21,9 @@ PAGINATION_LOOP_TIME_SLEEP = 1.8
 QUEUE_NAME = "github_logins_queue"
 INITIAL_PROFILE_LOGIN = "jakubgania"
 
+MAX_QUEUE_SIZE = 120  # Maksymalny rozmiar kolejki
+MIN_QUEUE_SIZE = 40   # Minimalny rozmiar kolejki, po którym proces może kontynuować
+
 config = {
     "mainLoop": {
         "limitNumberOfLoops": True,
@@ -38,12 +41,31 @@ config = {
 
 redis_client = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
 
+def get_queue_size():
+    return redis_client.llen(QUEUE_NAME)
+
+def wait_for_queue_size():
+    while True:
+        queue_size = get_queue_size()
+        if queue_size < MIN_QUEUE_SIZE:
+            print(f"✅ Queue size is now {queue_size}. Resuming processing...")
+            break
+        else:
+            print(f"⏳ Queue size is {queue_size}. Waiting...")
+            time.sleep(5)
+
 def enqueue_logins(logins: list[str]):
     """Dodaje wiele loginów do kolejki Redis w jednej operacji."""
     if not logins:
         return
+
+    queue_size = get_queue_size()
+    if queue_size >= MAX_QUEUE_SIZE:
+        print(f"❌ Queue size {queue_size} exceeds MAX_QUEUE_SIZE ({MAX_QUEUE_SIZE}). Waiting for space...")
+        wait_for_queue_size()  # Czekaj aż rozmiar kolejki spadnie poniżej MIN_QUEUE_SIZE
+
     redis_client.rpush(QUEUE_NAME, *logins)  # * rozpakowuje listę jako argumenty
-    print(f"➡️ Added {len(logins)} logins to Redis queue.")
+    print(f"➡️ Added {len(logins)} logins to Redis queue. Queue size: {get_queue_size()}")
 
 def validate_github_token():
     if not GITHUB_API_TOKEN:

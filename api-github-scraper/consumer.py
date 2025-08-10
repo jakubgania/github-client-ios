@@ -38,7 +38,7 @@ def get_redis_connection():
     return redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
 
 def wait_for_postgres():
-    """Czeka aż Postgres będzie dostępny."""
+    """Waiting for Postgres to be available"""
     while True:
         try:
             with psycopg.connect(POSTGRES_DSN) as conn:
@@ -177,5 +177,3 @@ def consumer():
 
 if __name__ == "__main__":
     consumer()
-    # usr = fetch_github_user("jakubgania")
-    # print(usr)
